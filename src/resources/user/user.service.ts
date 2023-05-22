@@ -24,7 +24,7 @@ class UserService {
             const accessToken = token.createToken(user);
 
             return accessToken;
-        } catch (error) {
+        } catch (error: any) {
             throw new Error(error.message);
         }
     }

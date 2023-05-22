@@ -1,0 +1,84 @@
+{
+    "body": [
+        {
+            "id": "Trade:10:0x1c9b58cad256fc3f7fce135641e4d0d893eee4660df85cc272b88cf16ea21bdd",
+            "timestamp": 1659359827,
+            "account": "0x7b7736a2c07c4332ffad45a039d2117ae15e3f66",
+            "collateralToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+            "indexToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+            "isLong": true,
+            "key": "0x3b42576bcc6af378227aa8f61ba71470e28575add9593d4dd5d5ea4ec56b0786",
+            "status": "closed",
+            "increaseList": [
+                {
+                    "id": "IncreasePosition:19:0x5eae853d7ee33b0f6bb8b710e1d61f92cff9dc990128ade27ba63d525a5b19f0",
+                    "timestamp": 1659359827,
+                    "account": "0x7b7736a2c07c4332ffad45a039d2117ae15e3f66",
+                    "collateralToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+                    "indexToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+                    "isLong": true,
+                    "key": "0x3b42576bcc6af378227aa8f61ba71470e28575add9593d4dd5d5ea4ec56b0786",
+                    "collateralDelta": "2214444729887834400000000000000000",
+                    "sizeDelta": "52534431670409059845165000000000000",
+                    "fee": "52534431670409059845165000000000",
+                    "price": "1647666000000000000000000000000000",
+                    "__typename": "IncreasePosition"
+                }
+            ],
+            "decreaseList": [
+                {
+                    "id": "DecreasePosition:9:0x1c9b58cad256fc3f7fce135641e4d0d893eee4660df85cc272b88cf16ea21bdd",
+                    "timestamp": 1659362027,
+                    "account": "0x7b7736a2c07c4332ffad45a039d2117ae15e3f66",
+                    "collateralToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+                    "indexToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+                    "isLong": true,
+                    "key": "0x3b42576bcc6af378227aa8f61ba71470e28575add9593d4dd5d5ea4ec56b0786",
+                    "collateralDelta": "0",
+                    "sizeDelta": "52534431670409059845165000000000000",
+                    "fee": "52534431670409059845165000000000",
+                    "price": "1665800000000000000000000000000000",
+                    "__typename": "DecreasePosition"
+                }
+            ],
+            "updateList": [
+                {
+                    "id": "UpdatePosition:20:0x5eae853d7ee33b0f6bb8b710e1d61f92cff9dc990128ade27ba63d525a5b19f0",
+                    "timestamp": 1659359827,
+                    "key": "0x3b42576bcc6af378227aa8f61ba71470e28575add9593d4dd5d5ea4ec56b0786",
+                    "size": "52534431670409059845165000000000000",
+                    "markPrice": "1647666000000000000000000000000000",
+                    "collateral": "2161910298217425340154835000000000",
+                    "reserveAmount": "31884151078197316595",
+                    "realisedPnl": "0",
+                    "averagePrice": "1647666000000000000000000000000000",
+                    "entryFundingRate": "269152",
+                    "__typename": "UpdatePosition"
+                }
+            ],
+            "sizeDelta": "52534431670409059845165000000000000",
+            "collateralDelta": "2214444729887834400000000000000000",
+            "fee": "105068863340818119690330000000000",
+            "size": "52534431670409059845165000000000000",
+            "collateral": "2161910298217425340154835000000000",
+            "averagePrice": "1647666000000000000000000000000000",
+            "realisedPnl": "578187195652030139137557071639519",
+            "realisedPnlPercentage": "2674",
+            "settledTimestamp": 1659362027,
+            "closedPosition": {
+                "id": "ClosePosition:10:0x1c9b58cad256fc3f7fce135641e4d0d893eee4660df85cc272b88cf16ea21bdd",
+                "timestamp": 1659362027,
+                "key": "0x3b42576bcc6af378227aa8f61ba71470e28575add9593d4dd5d5ea4ec56b0786",
+                "size": "52534431670409059845165000000000000",
+                "collateral": "0",
+                "reserveAmount": "0",
+                "realisedPnl": "578187195652030139137557071639519",
+                "averagePrice": "1647666000000000000000000000000000",
+                "entryFundingRate": "269152",
+                "__typename": "ClosePosition"
+            },
+            "liquidatedPosition": null,
+            "__typename": "Trade"
+        }
+    ]
+}

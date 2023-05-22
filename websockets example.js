@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 
 // Specify the custom host and origin
 const customHost = 'www.gmx.house';
-const customOrigin = ' https://www.gmx.house';
+const customOrigin = 'https://www.gmx.house';
 
 // Connect to the WebSocket server with custom headers
 const ws = new WebSocket('wss://www.gmx.house/api-ws', {
