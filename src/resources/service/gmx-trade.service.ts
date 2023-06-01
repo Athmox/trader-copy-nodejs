@@ -1,11 +1,36 @@
-import { PriceLatest, TestModel, Trade } from "./gmx.model";
+import GmxTrade, { TestModel } from "./interface/gmx.interface";
 import WebSocket from 'ws';
+import TradeModel from '@/resources/service/model/gmx-trade.model';
 
+// checks incoming trades
 export class GmxService {
+    
+    public async test2(): Promise<GmxTrade> {
+        
+        // get trade from mongo db with id
+        const foundTrade = await this.tradeModel.findById('6474e60c25d02366d17e69b5');
+
+        console.log("found trade", foundTrade);
+
+        const trade: GmxTrade = foundTrade !== null ? foundTrade : {} as GmxTrade;
+        
+        console.log("casted trade", trade);
+
+        return trade;
+    }
     
     webSocketConnection: any;
 
-    private initWs() {
+    private tradeModel = TradeModel;    
+
+    // handle the message and change it to our required format
+    // save id
+    // save it to db
+    // check if it is a new trade thats no in db
+    // if yes, make a new trade and save it to db
+    // TODO
+
+    private initWsConnection() {
 
         this.webSocketConnection = new WebSocket('wss://www.gmx.house/api-ws', {
             host: "www.gmx.house",
@@ -16,12 +41,8 @@ export class GmxService {
             console.log('Connected to the WebSocket server');
 
             this.startTradeTracking();
-
-            // Send a message to the server
-            // this.webSocketConnection.send(`{"topic":"requestLatestPriceMap","body":{"chain":42161}}`);
         };
 
-        // Handle incoming messages
         this.webSocketConnection.onmessage = (event: WebSocket.MessageEvent) => {
             console.log('Received:', event.data);
 
@@ -31,23 +52,19 @@ export class GmxService {
             // this.webSocketConnection.close();
         };
 
-        // Handle WebSocket close
         this.webSocketConnection.onclose = () => {
             console.log('WebSocket connection closed');
         };
 
-        // Handle WebSocket error
         this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
             console.error('WebSocket error:', error);
         };
     }
 
     public startTradeTracking() {
-        // send a periodic message to the server to keep the connection alive
-        // enable when needed
         setInterval(() => {
             console.log("Sending message to server");
-            this.webSocketConnection.send(`{"topic":"requestAccountTradeList","body":{"account":"0xEEEE451963d5A81C9D94776C9519ABb6b6342Ad5","timeInterval":5256000,"chain":42161}}`);
+            this.webSocketConnection.send(`{"topic":"requestAccountTradeList","body":{"account":"0x70C4BB57ad36d5b94acCF57721511d6e3cA459C2","timeInterval":5256000,"chain":42161}}`);
         }, 4000);
     }
     
@@ -56,7 +73,7 @@ export class GmxService {
         // Create a WebSocket client
 
         // Handle WebSocket connection open
-        this.initWs();
+        this.initWsConnection();
 
         const testModel: TestModel = {name: "Its a test"}
 
@@ -64,14 +81,11 @@ export class GmxService {
     }
 
 
-    private handleWsMessage(event: WebSocket.MessageEvent) {
+    private async handleWsMessage(event: WebSocket.MessageEvent) {
 
-        const tades: Trade[] = JSON.parse(event.data.toString()).body; 
+        const tades: GmxTrade[] = JSON.parse(event.data.toString()).body; 
 
-        //filter trades for status = open
-        const openTrades = tades.filter(trade => trade.status === "open");
-
-        console.log("open trades", openTrades);
+        const savedTrades = await this.tradeModel.create(tades[0]);
     }
 
 }

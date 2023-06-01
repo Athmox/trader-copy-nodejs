@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import Controller from '@/utils/interfaces/controller.interface';
 import HttpException from '@/utils/exceptions/http.exception';
-import { GmxService } from './gmx.service';
+import { GmxService } from '../service/gmx-trade.service';
 
 class GmxController implements Controller {
     public path = '/gmx';
@@ -17,6 +17,10 @@ class GmxController implements Controller {
             `${this.path}/test`,
             this.test
         );
+        this.router.post(
+            `${this.path}/test-2`,
+            this.test2
+        );
     }
 
     private test = async (
@@ -27,6 +31,22 @@ class GmxController implements Controller {
         try {
             
             const testModel = this.gmxService.test();
+
+            res.status(201).json(testModel);
+
+        } catch (error) {
+            next(new HttpException(400, 'Cannot create post'));
+        }
+    };
+
+    private test2 = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        try {
+            
+            const testModel = await this.gmxService.test2();
 
             res.status(201).json(testModel);
 

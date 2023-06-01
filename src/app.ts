@@ -15,8 +15,7 @@ class App {
         this.express = express();
         this.port = port;
 
-        // TODO: May be used for the future when needed.
-        // this.initialiseDatabaseConnection();
+        this.initialiseDatabaseConnection();
         
         this.initialiseMiddleware();
         this.initialiseControllers(controllers);
@@ -45,9 +44,17 @@ class App {
     private initialiseDatabaseConnection(): void {
         const { MONGO_USER, MONGO_PASSWORD, MONGO_URL, MONGO_DATABASE, MONGO_AUTH_MECHANISM, MONGO_AUTH_DATABASE} = process.env;
         
+        // before i used localhost, but it was not working
+        // so i changed it to 127.0.0.1
+
+        
         mongoose.connect(
-            `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_URL}/${MONGO_DATABASE}?authMechanism=${MONGO_AUTH_MECHANISM}&authSource=${MONGO_AUTH_DATABASE}`
+            `mongodb://127.0.0.1:27017/trades`
         );
+
+        // mongoose.connect(
+        //     `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_URL}/${MONGO_DATABASE}?authMechanism=${MONGO_AUTH_MECHANISM}&authSource=${MONGO_AUTH_DATABASE}`
+        // );
     }
 
     public listen(): void {
