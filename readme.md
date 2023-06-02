@@ -1,5 +1,11 @@
 # Trader-Copy API
-Later on a frontend part is planned, where a user can easily interact with the backend. For now interaction with the backend is only possible via postman.
+Later on a frontend part is planned, where a user can easily interact with the backend. For now interaction with the backend is only possible via postman.<br>
+
+## Environment Variables
+Without them the api will not start and thow an error. They all must be set.
+
+### SIZE_FACTOR
+This Factor gets multiplied with the buy & sell quantity for the trade.
 
 ## Start API
 ```npm run dev```
@@ -7,18 +13,8 @@ Later on a frontend part is planned, where a user can easily interact with the b
 ## Base URL
 ```/api/```
 
-## Storing Wallet Priate Keys
-Never push Wallet Private Keys on GIT!!<br>
-A file called ```wallet-private-keys.json``` must be created and the Keys must be stored like this: 
-```javascript
-[
-    {
-        "walletAddress": "0x1FE78ae103e965D83Be62B3...",
-        "walletPrivateKey": "e58999c40f8f07dc0d78234dfe1...",
-        "useForMint": true
-    }
-]
-```
+## Storing Binance API Key
+Never push Binance API Key on GIT!!<br>
 
 ## Site to convert Date to time in millis
 (https://currentmillis.com/)[https://currentmillis.com/]

@@ -1,10 +1,14 @@
 import GmxTrade, { TestModel } from "./interface/gmx.interface";
 import WebSocket from 'ws';
 import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
+import { TradeService } from "./trade.service";
 
-// checks incoming trades
 export class GmxService {
     
+    webSocketConnection: any;
+    private tradeModel = GmxTradeModel;    
+    private tradeService = new TradeService();
+
     public async test2(): Promise<GmxTrade> {
         
         // get trade from mongo db with id
@@ -18,17 +22,6 @@ export class GmxService {
 
         return trade;
     }
-    
-    webSocketConnection: any;
-
-    private tradeModel = GmxTradeModel;    
-
-    // handle the message and change it to our required format
-    // save id
-    // save it to db
-    // check if it is a new trade thats no in db
-    // if yes, make a new trade and save it to db
-    // TODO
 
     private initWsConnection() {
 
@@ -69,10 +62,7 @@ export class GmxService {
     }
     
     public test(): TestModel {
-
-        // Create a WebSocket client
-
-        // Handle WebSocket connection open
+        
         this.initWsConnection();
 
         const testModel: TestModel = {name: "Its a test"}
@@ -83,9 +73,9 @@ export class GmxService {
 
     private async handleWsMessage(event: WebSocket.MessageEvent) {
 
-        const tades: GmxTrade[] = JSON.parse(event.data.toString()).body; 
+        const trades: GmxTrade[] = JSON.parse(event.data.toString()).body; 
 
-        const savedTrades = await this.tradeModel.create(tades[0]);
+        this.tradeService.handleNewTrades(trades);
     }
 
 }

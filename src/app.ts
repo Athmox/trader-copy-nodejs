@@ -16,10 +16,11 @@ class App {
         this.port = port;
 
         this.initialiseDatabaseConnection();
-        
+
         this.initialiseMiddleware();
         this.initialiseControllers(controllers);
         this.initialiseErrorHandling();
+        this.checkEnvironmentVariables();
     }
 
     private initialiseMiddleware(): void {
@@ -42,12 +43,12 @@ class App {
     }
 
     private initialiseDatabaseConnection(): void {
-        const { MONGO_USER, MONGO_PASSWORD, MONGO_URL, MONGO_DATABASE, MONGO_AUTH_MECHANISM, MONGO_AUTH_DATABASE} = process.env;
-        
+        const { MONGO_USER, MONGO_PASSWORD, MONGO_URL, MONGO_DATABASE, MONGO_AUTH_MECHANISM, MONGO_AUTH_DATABASE } = process.env;
+
         // before i used localhost, but it was not working
         // so i changed it to 127.0.0.1
 
-        
+
         mongoose.connect(
             `mongodb://127.0.0.1:27017/trades`
         );
@@ -62,6 +63,15 @@ class App {
             console.log(`App listening on the port ${this.port}`);
         });
     }
+
+    private checkEnvironmentVariables() {
+        const { QUANTITY_FACTOR } = process.env;
+
+        if(QUANTITY_FACTOR === undefined || QUANTITY_FACTOR === null || QUANTITY_FACTOR === "" || QUANTITY_FACTOR === "0" || Number(QUANTITY_FACTOR) <= 0) {
+            throw new Error("QUANTITY_FACTOR is not set correctly!");
+        }
+    }
 }
+
 
 export default App;

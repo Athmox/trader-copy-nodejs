@@ -1,9 +1,9 @@
 import { Document } from "mongoose";
 
 export enum TradeStatus {
-    OPEN = "OPEN",
-    CLOSED = "CLOSED",
-    LIQUIDATED = "LIQUIDATED"
+    OPEN,
+    CLOSED,
+    LIQUIDATED
 }
 
 export enum PositionType {
@@ -12,13 +12,13 @@ export enum PositionType {
     UPDATE = "UPDATE"
 }
 
-export interface ColleteralTokenToTokenName extends Document { 
-    colleteralToken: string;
-    colleteralTokenName: string;
+export interface CollateralTokenToTokenName { 
+    collateralToken: string;
+    collateralTokenName: string;
     binanceTokenName: string;
 }
 
-export interface Trade extends Document {
+export interface Trade {
     gmxTradeId: string;
     timestamp: Date;
     collateralToken: string;
@@ -26,9 +26,8 @@ export interface Trade extends Document {
     binanceTokenName: string;
     leverage: number;
     isLong: boolean;
-    status: string;
-    sharingFactor: number;
-    size: number;
+    status: TradeStatus;
+    quantityFactor: number;
     positions: Position[];
 }
 
@@ -36,7 +35,7 @@ export interface Position {
     gmxPositionId: string;
     timestamp: Date;
     type: PositionType;
-    size: number;
+    quantity: number;
 }
 
 export interface PositionsToBeCreated {
