@@ -18,7 +18,7 @@ export class BinanceTradeService {
             const increasePosition = gmxTrade.increaseList[0];
 
             const timestamp = Number(gmxTrade.timestamp) * 1000;
-            const leverage = Math.round(Number(gmxTrade.size) / Number(gmxTrade.collateral));
+            const leverage = Math.round((Number(gmxTrade.size) / Number(gmxTrade.collateral))*100)/100;
             const quantity = this.calculateQuantity(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
 
@@ -76,15 +76,23 @@ export class BinanceTradeService {
                 quantity: this.calculateQuantity(gmxNewPosition.quantity, trade.quantityFactor)
             }
 
+            console.log("new position quantity after", gmxNewPosition.quantity);
+
             console.log("new position processed: ", newPosition);
 
             positions.push(newPosition);
         }
 
         trade.positions = positions;
+
+        trade.save();
     }
 
     private calculateQuantity(quantity: number, QUANTITY_FACTOR: number) {
-        return (quantity / 10 ** 33) * QUANTITY_FACTOR;
+        console.log("new position quantity before", quantity);
+        console.log("QUANTITY_FACTOR", QUANTITY_FACTOR);
+
+
+        return (quantity / 10 ** 31) * QUANTITY_FACTOR;
     }
 }

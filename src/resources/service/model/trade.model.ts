@@ -10,7 +10,7 @@ const TradeSchema = new Schema({
     leverage: { type: Number, required: false },
     isLong: { type: Boolean, required: false },
     status: { type: String, required: false },
-    sharingFactor: { type: Number, required: false },
+    quantityFactor: { type: Number, required: false },
     size: { type: Number, required: false },
     positions: { type: Array, required: false },
 }, {

@@ -4,7 +4,12 @@ import GmxTrade from './interface/gmx.interface';
 import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade } from './interface/trade.interface';
 import { BinanceTradeService } from './binance-trade.service';
 
-// TODO: bei den timestamps evtl noch ein paar nullen dazu multiplizieren
+/*
+ * TODO: die id von den trade ändert sich wenn der trade geschlossen wird.
+ * also muss ich für den fall wenn der trade geschlossen wird mit den position ids arbeiten
+ * 
+ * außerdem muss ich schauen ob ich bei beinance die quantity von dem asset, oder um wie viel usd ich kaufen will angeben muss
+ */
 
 export class TradeService {
 
@@ -14,7 +19,7 @@ export class TradeService {
 
     public async handleNewTrades(trades: GmxTrade[]) {
 
-        const allOpenTradesInDB = await this.tradeModel.find({ status: 'OPEN' });
+        const allOpenTradesInDB = await this.tradeModel.find({ status: 0 });
 
         const newTrades = await this.checkForNewTrades(trades, allOpenTradesInDB);
 
@@ -65,7 +70,7 @@ export class TradeService {
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
                             gmxPositionId: increasePosition.id,
-                            quantity: Number(increasePosition.sizeDelta),
+                            quantity: Number(increasePosition.collateralDelta),
                             timestamp: new Date(Number(increasePosition.timestamp) * 1000),
                             type: PositionType.INCREASE
                         };
@@ -82,7 +87,7 @@ export class TradeService {
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
                             gmxPositionId: decreasePosition.id,
-                            quantity: Number(decreasePosition.sizeDelta),
+                            quantity: Number(decreasePosition.collateralDelta),
                             timestamp: new Date(Number(decreasePosition.timestamp) * 1000),
                             type: PositionType.DECREASE
                         };

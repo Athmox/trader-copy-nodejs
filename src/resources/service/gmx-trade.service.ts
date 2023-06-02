@@ -37,7 +37,7 @@ export class GmxService {
         };
 
         this.webSocketConnection.onmessage = (event: WebSocket.MessageEvent) => {
-            console.log('Received:', event.data);
+            // console.log('Received:', event.data);
 
             this.handleWsMessage(event);
 
@@ -47,6 +47,8 @@ export class GmxService {
 
         this.webSocketConnection.onclose = () => {
             console.log('WebSocket connection closed');
+
+            // TODO: reconnect when connection is closed
         };
 
         this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
