@@ -2,32 +2,28 @@ import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade from './interface/gmx.interface';
 import { Position, PositionType, PositionsToBeCreated } from './interface/trade.interface';
+import { BinanceTradeService } from './binance-trade.service';
 
 export class TradeService {
 
-    private gmxTradeModel = GmxTradeModel;
     private tradeModel = TradeModel;
+
+    private binanceTradeService = new BinanceTradeService();
 
     public async handleNewTrades(trades: GmxTrade[]) {
 
         const newTrades = await this.checkForNewTrades(trades);
 
         for (const newTrade of newTrades) {
-            await this.createForNewTrade(newTrade);
+            await this.binanceTradeService.createForNewTrade(newTrade);
         }
 
         const newPositions = await this.checkForNewPositions(trades);
     
         for (const newPosition of newPositions) {
-            await this.createForNewPosition(newPosition);
+            await this.binanceTradeService.createForNewPosition(newPosition);
         }
 
-        // get all trades from db
-        // check if trade is in db
-        // if not, create new trade
-        // if yes, update trade
-        // save trade to db
-        // TODO
     }
     private async checkForNewTrades(trades: GmxTrade[]): Promise<GmxTrade[]> {
         
@@ -103,19 +99,4 @@ export class TradeService {
         return Promise.resolve(newPositionsToBeCreated);
     }
     
-    public async createForNewTrade(trade: GmxTrade): Promise<GmxTrade | null> {
-            
-        // create trade with binance api
-        // save trade to db  
-    
-        return Promise.resolve(null);
-    }
-
-    public async createForNewPosition(newPositions: PositionsToBeCreated): Promise<GmxTrade | null> {
-            
-        // create trade with binance api
-        // save trade to db  
-    
-        return Promise.resolve(null);
-    }
 }
