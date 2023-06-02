@@ -1,9 +1,9 @@
 import { Schema, model } from "mongoose";
-import Trade from "../interface/trade.interface";
+import { Trade } from "../interface/trade.interface";
 
 const TradeSchema = new Schema({
     gmxTradeId: { type: String, required: false },
-    timestamp: { type: Number, required: false },
+    timestamp: { type: Date, required: false },
     collateralToken: { type: String, required: false },
     colleteralTokenName: { type: String, required: false },
     binanceTokenName: { type: String, required: false },

@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import GmxTrade from "../interface/gmx.interface";
 
-const TradeSchema = new Schema({
+const GmxTradeSchema = new Schema({
     id: { type: String, required: false },
     timestamp: { type: Number, required: false },
     account: { type: String, required: false },
@@ -29,4 +29,4 @@ const TradeSchema = new Schema({
     collection: 'trades'
 });
 
-export default model<GmxTrade>('Trade', TradeSchema);
+export default model<GmxTrade>('GmxTrade', GmxTradeSchema);

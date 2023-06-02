@@ -1,6 +1,6 @@
 import GmxTrade, { TestModel } from "./interface/gmx.interface";
 import WebSocket from 'ws';
-import TradeModel from '@/resources/service/model/gmx-trade.model';
+import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 
 // checks incoming trades
 export class GmxService {
@@ -21,7 +21,7 @@ export class GmxService {
     
     webSocketConnection: any;
 
-    private tradeModel = TradeModel;    
+    private tradeModel = GmxTradeModel;    
 
     // handle the message and change it to our required format
     // save id

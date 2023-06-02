@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import ColleteralTokenToTokenName from "../interface/trade.interface";
+import { ColleteralTokenToTokenName } from "../interface/trade.interface";
 
 const ColleteralTokenToTokenNameSchema = new Schema({
     colleteralToken: { type: String, required: false },

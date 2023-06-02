@@ -1,4 +1,4 @@
-import { Date, Document } from "mongoose";
+import { Document } from "mongoose";
 
 export enum TradeStatus {
     OPEN = "OPEN",
@@ -12,13 +12,13 @@ export enum PositionType {
     UPDATE = "UPDATE"
 }
 
-export default interface ColleteralTokenToTokenName extends Document { 
+export interface ColleteralTokenToTokenName extends Document { 
     colleteralToken: string;
     colleteralTokenName: string;
     binanceTokenName: string;
 }
 
-export default interface Trade extends Document {
+export interface Trade extends Document {
     gmxTradeId: string;
     timestamp: Date;
     collateralToken: string;
@@ -32,8 +32,14 @@ export default interface Trade extends Document {
     positions: Position[];
 }
 
-export interface Position extends Document {
+export interface Position {
+    gmxPositionId: string;
     timestamp: Date;
     type: PositionType;
     size: number;
+}
+
+export interface PositionsToBeCreated {
+    gmxTradeId: string;
+    positions: Position[];
 }
