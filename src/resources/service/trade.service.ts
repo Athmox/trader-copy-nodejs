@@ -1,7 +1,7 @@
 import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade from './interface/gmx.interface';
-import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade, TradeClosureToBeCreated } from './interface/trade.interface';
+import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade, TradeClosureToBeCreated, TradeStatus } from './interface/trade.interface';
 import { BinanceTradeService } from './binance-trade.service';
 
 /*
@@ -16,7 +16,7 @@ export class TradeService {
 
     public async handleNewTrades(trades: GmxTrade[]) {
 
-        const allOpenTradesInDB = await this.tradeModel.find({ status: 0 });
+        const allOpenTradesInDB = await this.tradeModel.find({ status: TradeStatus.OPEN });
 
         const newTrades = await this.checkForNewTrades(trades, allOpenTradesInDB);
 

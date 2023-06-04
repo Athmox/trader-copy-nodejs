@@ -121,6 +121,6 @@ export class BinanceTradeService {
             throw new Error("quantity is undefined");
         }
 
-        return (quantityInUsd / 10 ** 31) * QUANTITY_FACTOR;
+        return (quantityInUsd / 10 ** 30) * QUANTITY_FACTOR;
     }
 }
