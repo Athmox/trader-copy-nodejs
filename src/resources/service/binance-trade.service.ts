@@ -3,6 +3,10 @@ import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade, { GmxIncrease } from './interface/gmx.interface';
 import { Position, PositionType, PositionsToBeCreated, Trade, TradeClosureToBeCreated, TradeStatus } from './interface/trade.interface';
 
+/*
+* die positions müssen unbedingt quantity und quantityInUsd speichern für den close trade! 
+*/
+
 export class BinanceTradeService {
 
     private tradeModel = TradeModel;
@@ -18,7 +22,7 @@ export class BinanceTradeService {
             const increasePosition = gmxTrade.increaseList[0];
 
             const timestamp = Number(gmxTrade.timestamp) * 1000;
-            const leverage = Math.round((Number(gmxTrade.size) / Number(gmxTrade.collateral))*100)/100;
+            const leverage = Math.round((Number(gmxTrade.size) / Number(gmxTrade.collateral)) * 100) / 100;
             const quantityInUsd = this.calculateQuantityInUsd(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
 
@@ -87,7 +91,7 @@ export class BinanceTradeService {
     }
 
     public async handleClosedTrade(closedTrade: TradeClosureToBeCreated) {
-        
+
         const tradeToBeClosed = await this.tradeModel.findOne({ gmxTradeId: closedTrade.oldGmxTradeId });
 
         if (tradeToBeClosed === null || tradeToBeClosed === undefined) {
@@ -113,7 +117,7 @@ export class BinanceTradeService {
 
     private calculateQuantityInUsd(quantityInUsd: number | undefined, QUANTITY_FACTOR: number) {
 
-        if(!quantityInUsd) {
+        if (!quantityInUsd) {
             throw new Error("quantity is undefined");
         }
 

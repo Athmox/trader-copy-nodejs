@@ -5,9 +5,6 @@ import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Tr
 import { BinanceTradeService } from './binance-trade.service';
 
 /*
- * TODO: die id von den trade ändert sich wenn der trade geschlossen wird.
- * also muss ich für den fall wenn der trade geschlossen wird mit den position ids arbeiten
- * 
  * außerdem muss ich schauen ob ich bei beinance die quantity von dem asset, oder um wie viel usd ich kaufen will angeben muss
  */
 
