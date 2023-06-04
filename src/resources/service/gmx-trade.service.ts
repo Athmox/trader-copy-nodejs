@@ -1,4 +1,4 @@
-import GmxTrade, { TestModel } from "./interface/gmx.interface";
+import GmxTrade from "./interface/gmx.interface";
 import WebSocket from 'ws';
 import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 import { TradeService } from "./trade.service";
@@ -37,18 +37,14 @@ export class GmxService {
         };
 
         this.webSocketConnection.onmessage = (event: WebSocket.MessageEvent) => {
-            // console.log('Received:', event.data);
 
             this.handleWsMessage(event);
-
-            // Close the WebSocket connection
-            // this.webSocketConnection.close();
         };
 
         this.webSocketConnection.onclose = () => {
-            console.log('WebSocket connection closed');
+            console.log('WebSocket connection closed - try to reconnect');
 
-            // TODO: reconnect when connection is closed
+            this.webSocketConnection.reconnect();
         };
 
         this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
@@ -56,20 +52,22 @@ export class GmxService {
         };
     }
 
-    public startTradeTracking() {
+    private startTradeTracking() {
         setInterval(() => {
             console.log("Sending message to server");
             this.webSocketConnection.send(`{"topic":"requestAccountTradeList","body":{"account":"0x70C4BB57ad36d5b94acCF57721511d6e3cA459C2","timeInterval":5256000,"chain":42161}}`);
         }, 4000);
     }
     
-    public test(): TestModel {
+    public startGmxTradeService(): any {
         
         this.initWsConnection();
 
-        const testModel: TestModel = {name: "Its a test"}
-
-        return testModel;
+        const startFeedback = {
+            status: "started"
+        };
+        
+        return startFeedback;
     }
 
 

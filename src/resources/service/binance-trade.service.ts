@@ -1,14 +1,14 @@
 import CollateralTokenToTokenNameModel from '@/resources/service/model/collateral-token-to-token-name.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade, { GmxIncrease } from './interface/gmx.interface';
-import { Position, PositionType, PositionsToBeCreated, Trade, TradeStatus } from './interface/trade.interface';
+import { Position, PositionType, PositionsToBeCreated, Trade, TradeClosureToBeCreated, TradeStatus } from './interface/trade.interface';
 
 export class BinanceTradeService {
 
     private tradeModel = TradeModel;
     private collateralTokenToTokenNameModel = CollateralTokenToTokenNameModel;
 
-    public async createForNewTrade(gmxTrade: GmxTrade) {
+    public async handleNewTrade(gmxTrade: GmxTrade) {
         const { QUANTITY_FACTOR } = process.env;
 
         const collateralTokenToTokenName = await this.collateralTokenToTokenNameModel.findOne({ collateralToken: gmxTrade.collateralToken });
@@ -19,14 +19,14 @@ export class BinanceTradeService {
 
             const timestamp = Number(gmxTrade.timestamp) * 1000;
             const leverage = Math.round((Number(gmxTrade.size) / Number(gmxTrade.collateral))*100)/100;
-            const quantity = this.calculateQuantity(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
+            const quantityInUsd = this.calculateQuantityInUsd(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
 
             const position: Position = {
                 gmxPositionId: increasePosition.id,
                 timestamp: new Date(timestamp),
                 type: PositionType.INCREASE,
-                quantity: quantity
+                quantityInUsd: quantityInUsd
             }
 
             const trade: Trade = {
@@ -55,7 +55,7 @@ export class BinanceTradeService {
         return Promise.resolve(null);
     }
 
-    public async createForNewPosition(gmxNewPositions: PositionsToBeCreated) {
+    public async handleNewPosition(gmxNewPositions: PositionsToBeCreated) {
 
         const trade = await this.tradeModel.findOne({ gmxTradeId: gmxNewPositions.gmxTradeId });
 
@@ -73,10 +73,8 @@ export class BinanceTradeService {
                 gmxPositionId: gmxNewPosition.gmxPositionId,
                 timestamp: gmxNewPosition.timestamp,
                 type: gmxNewPosition.type,
-                quantity: this.calculateQuantity(gmxNewPosition.quantity, trade.quantityFactor)
+                quantityInUsd: this.calculateQuantityInUsd(gmxNewPosition.unparsedQuantityInUsd, trade.quantityFactor)
             }
-
-            console.log("new position quantity after", gmxNewPosition.quantity);
 
             console.log("new position processed: ", newPosition);
 
@@ -88,11 +86,37 @@ export class BinanceTradeService {
         trade.save();
     }
 
-    private calculateQuantity(quantity: number, QUANTITY_FACTOR: number) {
-        console.log("new position quantity before", quantity);
-        console.log("QUANTITY_FACTOR", QUANTITY_FACTOR);
+    public async handleClosedTrade(closedTrade: TradeClosureToBeCreated) {
+        
+        const tradeToBeClosed = await this.tradeModel.findOne({ gmxTradeId: closedTrade.oldGmxTradeId });
 
+        if (tradeToBeClosed === null || tradeToBeClosed === undefined) {
+            throw new Error("old trade not found!! closed trade connot be created!! gmxTradeId: " + closedTrade.oldGmxTradeId);
+        }
 
-        return (quantity / 10 ** 31) * QUANTITY_FACTOR;
+        const closePosition: Position = {
+            gmxPositionId: closedTrade.closurePosition.gmxPositionId,
+            timestamp: closedTrade.closurePosition.timestamp,
+            type: PositionType.CLOSE,
+            quantity: closedTrade.closurePosition.quantity,
+            quantityInUsd: closedTrade.closurePosition.quantityInUsd
+        }
+
+        console.log("closed position processed: ", closePosition);
+
+        tradeToBeClosed.positions.push(closePosition);
+
+        tradeToBeClosed.gmxTradeId = closedTrade.newGmxTradeId;
+        tradeToBeClosed.status = TradeStatus.CLOSED;
+        tradeToBeClosed.save();
+    }
+
+    private calculateQuantityInUsd(quantityInUsd: number | undefined, QUANTITY_FACTOR: number) {
+
+        if(!quantityInUsd) {
+            throw new Error("quantity is undefined");
+        }
+
+        return (quantityInUsd / 10 ** 31) * QUANTITY_FACTOR;
     }
 }

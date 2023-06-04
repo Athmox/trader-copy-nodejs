@@ -14,8 +14,8 @@ class GmxController implements Controller {
 
     private initialiseRoutes(): void {
         this.router.post(
-            `${this.path}/test`,
-            this.test
+            `${this.path}/start`,
+            this.start
         );
         this.router.post(
             `${this.path}/test-2`,
@@ -23,16 +23,16 @@ class GmxController implements Controller {
         );
     }
 
-    private test = async (
+    private start = async (
         req: Request,
         res: Response,
         next: NextFunction
     ): Promise<Response | void> => {
         try {
             
-            const testModel = this.gmxService.test();
+            const startFeedback = this.gmxService.startGmxTradeService();
 
-            res.status(201).json(testModel);
+            res.status(201).json(startFeedback);
 
         } catch (error) {
             next(new HttpException(400, 'Cannot create post'));

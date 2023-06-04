@@ -1,15 +1,16 @@
 import { Document } from "mongoose";
 
 export enum TradeStatus {
-    OPEN,
-    CLOSED,
-    LIQUIDATED
+    OPEN = "OPEN",
+    CLOSED = "CLOSED",
+    LIQUIDATED = "LIQUIDATED"
 }
 
 export enum PositionType {
     INCREASE = "INCREASE",
     DECREASE = "DECREASE",
-    UPDATE = "UPDATE"
+    UPDATE = "UPDATE",
+    CLOSE = "CLOSE"
 }
 
 export interface CollateralTokenToTokenName { 
@@ -35,10 +36,18 @@ export interface Position {
     gmxPositionId: string;
     timestamp: Date;
     type: PositionType;
-    quantity: number;
+    quantity?: number;
+    quantityInUsd?: number;
+    unparsedQuantityInUsd?: number;
 }
 
 export interface PositionsToBeCreated {
     gmxTradeId: string;
     positions: Position[];
+}
+
+export interface TradeClosureToBeCreated {
+    oldGmxTradeId: string;
+    newGmxTradeId: string;
+    closurePosition: Position;
 }

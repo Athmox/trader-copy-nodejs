@@ -1,7 +1,7 @@
 import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade from './interface/gmx.interface';
-import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade } from './interface/trade.interface';
+import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade, TradeClosureToBeCreated } from './interface/trade.interface';
 import { BinanceTradeService } from './binance-trade.service';
 
 /*
@@ -24,15 +24,20 @@ export class TradeService {
         const newTrades = await this.checkForNewTrades(trades, allOpenTradesInDB);
 
         for (const newTrade of newTrades) {
-            await this.binanceTradeService.createForNewTrade(newTrade);
+            await this.binanceTradeService.handleNewTrade(newTrade);
         }
 
         const newPositions = await this.checkForNewPositions(trades, allOpenTradesInDB);
 
         for (const newPosition of newPositions) {
-            await this.binanceTradeService.createForNewPosition(newPosition);
+            await this.binanceTradeService.handleNewPosition(newPosition);
         }
 
+        const closedTrades = await this.checkForClosedTrades(trades, allOpenTradesInDB);
+
+        for (const closedTrade of closedTrades) {
+            await this.binanceTradeService.handleClosedTrade(closedTrade);
+        }
     }
 
     private async checkForNewTrades(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<GmxTrade[]> {
@@ -70,7 +75,7 @@ export class TradeService {
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
                             gmxPositionId: increasePosition.id,
-                            quantity: Number(increasePosition.collateralDelta),
+                            unparsedQuantityInUsd: Number(increasePosition.collateralDelta),
                             timestamp: new Date(Number(increasePosition.timestamp) * 1000),
                             type: PositionType.INCREASE
                         };
@@ -87,7 +92,7 @@ export class TradeService {
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
                             gmxPositionId: decreasePosition.id,
-                            quantity: Number(decreasePosition.collateralDelta),
+                            unparsedQuantityInUsd: Number(decreasePosition.collateralDelta),
                             timestamp: new Date(Number(decreasePosition.timestamp) * 1000),
                             type: PositionType.DECREASE
                         };
@@ -108,6 +113,58 @@ export class TradeService {
         }
 
         return Promise.resolve(newPositionsToBeCreated);
+    }
+
+    private async checkForClosedTrades(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<TradeClosureToBeCreated[]> {
+
+        const closedTrades: TradeClosureToBeCreated[] = [];
+
+        for (const trade of trades) {
+
+            const closedPosition = trade.closedPosition;
+
+            if (closedPosition) {
+
+                const firstIncreasePosition = trade.increaseList[0];
+
+                const foundTrade = allOpenTradesInDB.find(tradeInDB => {
+                    const foundPosition = tradeInDB.positions.find(position => position.gmxPositionId === firstIncreasePosition.id);
+                    if (foundPosition) {
+                        return true;
+                    }
+                });
+
+                if (foundTrade) {
+
+                    let totalQuantityOfAllPositions = 0;
+                    let totalQuantityInUsdOfAllPositions = 0;
+
+                    for (const position of foundTrade.positions) {
+                        totalQuantityOfAllPositions += position.quantity ? position.quantity : 0;
+                        totalQuantityInUsdOfAllPositions += position.quantityInUsd ? position.quantityInUsd : 0;
+                    }
+
+                    const closePosition: Position = {
+                        gmxPositionId: closedPosition.id,
+                        timestamp: new Date(Number(closedPosition.timestamp) * 1000),
+                        type: PositionType.CLOSE,
+                        quantity: totalQuantityOfAllPositions,
+                        quantityInUsd: totalQuantityInUsdOfAllPositions
+                    };
+
+                    const tradeClosureToBeCreated: TradeClosureToBeCreated = {
+                        oldGmxTradeId: foundTrade.gmxTradeId,
+                        newGmxTradeId: trade.id,
+                        closurePosition: closePosition
+                    };
+
+                    closedTrades.push(tradeClosureToBeCreated);
+                }
+
+            }
+        }
+
+        return Promise.resolve(closedTrades);
     }
 
 }

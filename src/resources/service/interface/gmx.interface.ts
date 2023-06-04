@@ -1,9 +1,5 @@
 import { Document } from "mongoose";
 
-export interface TestModel {
-    name: string;
-}
-
 export interface PriceLatest {
     id: string;
     value: string;
