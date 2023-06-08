@@ -26,14 +26,14 @@ export class BinanceTradeService {
 
     public async handleNewTrade(gmxTrade: GmxTrade) {
 
-        // TODO: Es MUSS gecheckt werden ob ein neuer Trade mit einem gleichen trading pair zu einem offenen trade reinkommt
-        // wenn ja muss dieser Trade ignoriert werden
-
         const { QUANTITY_FACTOR } = process.env;
 
         const collateralTokenToTokenName = await this.collateralTokenToTokenNameModel.findOne({ collateralToken: gmxTrade.collateralToken });
 
-        if (collateralTokenToTokenName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0) {
+        // check if trade to that collataralToken is already open
+        const openTrade = await this.tradeModel.findOne({ collateralToken: gmxTrade.collateralToken, status: TradeStatus.OPEN });
+
+        if (collateralTokenToTokenName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0 && !openTrade) {
 
             const increasePosition = gmxTrade.increaseList[0];
 
@@ -192,17 +192,17 @@ export class BinanceTradeService {
 
         let quantityOfAllPositions = 0;
         trade.positions.forEach(position => {
-            if(position.type === PositionType.INCREASE && position.quantity) {
+            if (position.type === PositionType.INCREASE && position.quantity) {
                 quantityOfAllPositions += position.quantity;
             } else if (position.type === PositionType.DECREASE && position.quantity) {
                 quantityOfAllPositions -= position.quantity;
             }
-         });
+        });
 
         binanceTradeParams.quantity = binanceTradeParams.quantity + quantityOfAllPositions;
 
         // TODO: check if nessesary for new positions
-    
+
         // const futuresMarginTypeResult = await binanceClient.futuresMarginType({
         //     symbol: binanceTradeParams.binanceTokenName,
         //     marginType: 'CROSSED', // Set the margin type to 'CROSSED' for Hedge mode
@@ -274,7 +274,7 @@ export class BinanceTradeService {
         return binanceClient;
     }
 
-    private async  createBinanceTradeParams(trade: Trade, positionToBeCreated: Position, binanceClient: Binance): Promise<BinanceTradeParams> {
+    private async createBinanceTradeParams(trade: Trade, positionToBeCreated: Position, binanceClient: Binance): Promise<BinanceTradeParams> {
 
         const quantityInUsd = positionToBeCreated.quantityInUsd;
 
@@ -304,5 +304,5 @@ export class BinanceTradeService {
 
         return Promise.resolve(binanceTradeParams);
     }
-    
+
 }
