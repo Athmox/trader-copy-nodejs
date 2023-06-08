@@ -34,6 +34,7 @@ export interface Trade {
 
 export interface Position {
     gmxPositionId: string;
+    binanceOrderId?: number;
     timestamp: Date;
     type: PositionType;
     quantity?: number;
@@ -50,4 +51,10 @@ export interface TradeClosureToBeCreated {
     oldGmxTradeId: string;
     newGmxTradeId: string;
     closurePosition: Position;
+}
+
+export interface BinanceApiCredentials {
+    apiKey: string;
+    apiSecret: string;
+    test: boolean;
 }

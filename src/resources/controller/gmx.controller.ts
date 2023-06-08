@@ -30,11 +30,18 @@ class GmxController implements Controller {
     ): Promise<Response | void> => {
         try {
             
-            const startFeedback = this.gmxService.startGmxTradeService();
+            const { traderAddress } = req.body;
+
+            if(traderAddress === undefined) {
+                throw new HttpException(400, 'traderAddress is undefined');
+            }
+
+            const startFeedback = this.gmxService.startGmxTradeService(traderAddress);
 
             res.status(201).json(startFeedback);
 
         } catch (error) {
+            console.log(error)
             next(new HttpException(400, 'Cannot create post'));
         }
     };
@@ -46,9 +53,9 @@ class GmxController implements Controller {
     ): Promise<Response | void> => {
         try {
             
-            const testModel = await this.gmxService.test2();
+            // const testModel = await this.gmxService.test2();
 
-            res.status(201).json(testModel);
+            res.status(201).json({});
 
         } catch (error) {
             next(new HttpException(400, 'Cannot create post'));

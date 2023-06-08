@@ -1,4 +1,3 @@
-import GmxTradeModel from '@/resources/service/model/gmx-trade.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade from './interface/gmx.interface';
 import { Position, PositionType, PositionsToBeCreated as PositionToBeCreated, Trade, TradeClosureToBeCreated, TradeStatus } from './interface/trade.interface';
