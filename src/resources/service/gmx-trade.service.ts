@@ -3,9 +3,7 @@ import WebSocket from 'ws';
 import { TradeService } from "./trade.service";
 import { BinanceTradeService } from "./binance-trade.service";
 
-export class GmxService {
-
-    webSocketConnection: any;
+export class GmxService { 
     private tradeService = new TradeService();
     private binanceTradeService = new BinanceTradeService();
     private traderAddress: string = "";
@@ -16,46 +14,51 @@ export class GmxService {
             throw new Error("traderAddress is not set");
         }
 
-        this.webSocketConnection = new WebSocket('wss://www.gmx.house/api-ws', {
-            host: "www.gmx.house",
-            origin: "https://www.gmx.house"
-        });
-
-        this.webSocketConnection.onopen = () => {
-            console.log('Connected to the WebSocket server');
-
-            this.startTradeTracking();
-        };
-
-        this.webSocketConnection.onmessage = (event: WebSocket.MessageEvent) => {
-
-            this.handleWsMessage(event);
-        };
-
-        this.webSocketConnection.onclose = () => {
-            console.log('WebSocket connection closed - try to reconnect');
-
-            setTimeout(() => {
-                this.webSocketConnection.removeAllListeners();
-                this.webSocketConnection.terminate();
-                this.webSocketConnection = null;
-            }, 5000);
-
-            setTimeout(() => {
-                this.initWsConnection();
-            }, 5000);
-        };
-
-        this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
-            console.error('WebSocket error:', error);
-        };
+        try {
+            let webSocketConnection = new WebSocket('wss://www.gmx.house/api-ws', {
+                host: "www.gmx.house",
+                origin: "https://www.gmx.house"
+            });
+    
+            webSocketConnection.onopen = () => {
+                console.log('Connected to the WebSocket server');
+    
+                this.startTradeTracking(webSocketConnection);
+            };
+    
+            webSocketConnection.onmessage = (event: WebSocket.MessageEvent) => {
+    
+                this.handleWsMessage(event);
+                this.startTradeTracking(webSocketConnection);
+            };
+    
+            webSocketConnection.onclose = () => {
+                console.log('WebSocket connection closed - try to reconnect');
+                
+                setTimeout(() => (
+                    this.initWsConnection()
+                ), 10000);
+            };
+    
+            webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
+                console.log('WebSocket error:', error);
+    
+                setTimeout(() => (
+                    this.initWsConnection()
+                ), 10000);
+            };
+        } catch (error) {
+            setTimeout(() => (
+                this.initWsConnection()
+            ), 10000);
+        }
     }
 
-    private startTradeTracking() {
+    private startTradeTracking(webSocketConnection: WebSocket) {
         const websocketTopic = `{"topic":"requestAccountTradeList","body":{"account":"` + this.traderAddress + `","timeInterval":5256000,"chain":42161}}`;
-        setInterval(() => {
+        setTimeout(() => {
             console.log("Sending message to server");
-            this.webSocketConnection.send(websocketTopic);
+            webSocketConnection.send(websocketTopic);
         }, 5000);
     }
 

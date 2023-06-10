@@ -38,6 +38,8 @@ export class TradeService {
 
     private async checkForNewTrades(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<GmxTrade[]> {
 
+        // TODO dont include trades that are older than 15 minutes
+
         const newTrades: GmxTrade[] = [];
 
         for (const trade of trades) {
