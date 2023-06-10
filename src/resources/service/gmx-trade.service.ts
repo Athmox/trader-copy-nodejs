@@ -36,6 +36,12 @@ export class GmxService {
             console.log('WebSocket connection closed - try to reconnect');
 
             setTimeout(() => {
+                this.webSocketConnection.removeAllListeners();
+                this.webSocketConnection.terminate();
+                this.webSocketConnection = null;
+            }, 5000);
+
+            setTimeout(() => {
                 this.initWsConnection();
             }, 5000);
         };
