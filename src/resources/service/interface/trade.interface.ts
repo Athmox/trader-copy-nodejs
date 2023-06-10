@@ -56,5 +56,5 @@ export interface TradeClosureToBeCreated {
 export interface BinanceApiCredentials {
     apiKey: string;
     apiSecret: string;
-    test: boolean;
+    testnet: boolean;
 }

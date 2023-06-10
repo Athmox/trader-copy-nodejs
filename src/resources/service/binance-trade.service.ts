@@ -5,7 +5,6 @@ import { Position, PositionType, PositionsToBeCreated, Trade, TradeClosureToBeCr
 import { BinanceApiCredentials } from './interface/trade.interface';
 import binanceApiCredentials from '../../../binanceApiCredentials.json';
 import { Binance, MarketNewFuturesOrder } from 'binance-api-node';
-import { OrderType } from 'binance-api-node';
 
 /*
 * die positions müssen unbedingt quantity und quantityInUsd speichern für den close trade! 
@@ -14,12 +13,14 @@ import { OrderType } from 'binance-api-node';
 interface BinanceTradeParams {
     binanceTokenName: string;
     side: "BUY" | "SELL";
-    positionSide: "LONG" | "SHORT";
     leverage: number;
     quantity: number;
 }
 
+
 export class BinanceTradeService {
+    
+    Binance = require('binance-api-node').default;
 
     private tradeModel = TradeModel;
     private collateralTokenToTokenNameModel = CollateralTokenToTokenNameModel;
@@ -33,12 +34,16 @@ export class BinanceTradeService {
         // check if trade to that collataralToken is already open
         const openTrade = await this.tradeModel.findOne({ collateralToken: gmxTrade.collateralToken, status: TradeStatus.OPEN });
 
-        if (collateralTokenToTokenName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0 && !openTrade) {
+        if(openTrade !== null) {
+            throw new Error("trade to that collateralToken is already open!! collateralToken: " + gmxTrade.collateralToken);
+        }
+
+        if (collateralTokenToTokenName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0) {
 
             const increasePosition = gmxTrade.increaseList[0];
 
             const timestamp = Number(gmxTrade.timestamp) * 1000;
-            const leverage = Math.round((Number(gmxTrade.size) / Number(gmxTrade.collateral)) * 100) / 100;
+            const leverage = Math.floor(Number(gmxTrade.size) / Number(gmxTrade.collateral));
             const quantityInUsd = this.calculateQuantityInUsd(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
             const position: Position = {
@@ -60,8 +65,6 @@ export class BinanceTradeService {
                 quantityFactor: Number(QUANTITY_FACTOR),
                 positions: [position]
             }
-
-            console.log("new trade processed: ", trade);
 
             this.placeNewTradeInBinanceApi(trade, position);
 
@@ -149,33 +152,53 @@ export class BinanceTradeService {
         * Wenn man seine position vergrößern will muss man anscheinend die quantity der position erhöhen
         * Das gleiche prinzip gilt für verkleinern
         * Die QuantityUSD Umrechnung nicht vergessen!!
+        * 
+        * Im Testnet ind executedQty immer 0 -> checken ob das im mainnet auch so ist
         */
 
         const binanceClient: Binance = this.createBinanceClient()
 
         const binanceTradeParams = await this.createBinanceTradeParams(trade, positionToBeCreated, binanceClient);
 
-        const futuresMarginTypeResult = await binanceClient.futuresMarginType({
-            symbol: binanceTradeParams.binanceTokenName,
-            marginType: 'CROSSED', // Set the margin type to 'CROSSED' for Hedge mode
-        });
+        const symbolInfo = await this.getSymbolInfo(binanceClient, binanceTradeParams.binanceTokenName);
 
-        // Create the order on Binance
-        const leverageResult = await binanceClient.futuresLeverage({
+        try {
+            await binanceClient.futuresMarginType({
+                symbol: binanceTradeParams.binanceTokenName,
+                marginType: 'ISOLATED', // Set the margin type to 'CROSSED' for Hedge mode
+            });
+        } catch (error) {
+            // when already set it throws an error
+            console.log("set marginType error: ", error);
+        }
+        
+        try {
+            await binanceClient.futuresPositionModeChange({
+                dualSidePosition: "false",
+                recvWindow: 5000
+            });
+        } catch (error) {
+            // when already set it throws an error
+            console.log("set dualSidePosition error: ", error);
+        }
+
+        await binanceClient.futuresLeverage({
             symbol: binanceTradeParams.binanceTokenName,
             leverage: binanceTradeParams.leverage,
         });
 
+        // TODO: evtl funktionierts in prod
+        // quantity: binanceTradeParams.quantity.toFixed(symbolInfo.baseAssetPrecision),
         const orderParams = {
             symbol: binanceTradeParams.binanceTokenName,
+            quantity: binanceTradeParams.quantity.toFixed(3),
             side: binanceTradeParams.side,
-            quantity: binanceTradeParams.quantity.toFixed(6),
-            positionSide: binanceTradeParams.positionSide,
+            type: 'MARKET'
         } as MarketNewFuturesOrder;
 
         const order = await binanceClient.futuresOrder(orderParams);
 
-        positionToBeCreated.quantity = Number(order.executedQty);
+        positionToBeCreated.quantity = Number(order.origQty);
         positionToBeCreated.binanceOrderId = order.orderId;
         trade.positions = [positionToBeCreated];
 
@@ -190,40 +213,20 @@ export class BinanceTradeService {
 
         const binanceTradeParams = await this.createBinanceTradeParams(trade, positionToBeCreated, binanceClient);
 
-        let quantityOfAllPositions = 0;
-        trade.positions.forEach(position => {
-            if (position.type === PositionType.INCREASE && position.quantity) {
-                quantityOfAllPositions += position.quantity;
-            } else if (position.type === PositionType.DECREASE && position.quantity) {
-                quantityOfAllPositions -= position.quantity;
-            }
-        });
+        const symbolInfo = await this.getSymbolInfo(binanceClient, binanceTradeParams.binanceTokenName);
 
-        binanceTradeParams.quantity = binanceTradeParams.quantity + quantityOfAllPositions;
-
-        // TODO: check if nessesary for new positions
-
-        // const futuresMarginTypeResult = await binanceClient.futuresMarginType({
-        //     symbol: binanceTradeParams.binanceTokenName,
-        //     marginType: 'CROSSED', // Set the margin type to 'CROSSED' for Hedge mode
-        // });
-
-        // // Create the order on Binance
-        // const leverageResult = await binanceClient.futuresLeverage({
-        //     symbol: binanceTradeParams.binanceTokenName,
-        //     leverage: binanceTradeParams.leverage,
-        // });
-
+        // TODO: evtl funktionierts in prod
+        // quantity: binanceTradeParams.quantity.toFixed(symbolInfo.baseAssetPrecision),
         const orderParams = {
             symbol: binanceTradeParams.binanceTokenName,
             side: binanceTradeParams.side,
-            quantity: binanceTradeParams.quantity.toFixed(6),
-            positionSide: binanceTradeParams.positionSide,
+            quantity: binanceTradeParams.quantity.toFixed(3),
+            type: 'MARKET'
         } as MarketNewFuturesOrder;
 
         const order = await binanceClient.futuresOrder(orderParams);
 
-        positionToBeCreated.quantity = Number(order.executedQty);
+        positionToBeCreated.quantity = Number(order.origQty);
         positionToBeCreated.binanceOrderId = order.orderId;
 
         trade.positions.push(positionToBeCreated);
@@ -239,18 +242,31 @@ export class BinanceTradeService {
 
         const binanceTradeParams = await this.createBinanceTradeParams(trade, positionToBeCreated, binanceClient);
 
-        binanceTradeParams.quantity = 0;
+        const symbolInfo = await this.getSymbolInfo(binanceClient, binanceTradeParams.binanceTokenName);
 
+        let quantityOfAllPositions = 0;
+        for(const position of trade.positions) {
+            if (position?.quantity && position.type === PositionType.INCREASE) { 
+                quantityOfAllPositions += position.quantity;
+            } else if (position?.quantity && position.type === PositionType.DECREASE) {
+                quantityOfAllPositions -= position.quantity;
+            }
+        }
+
+        binanceTradeParams.quantity = quantityOfAllPositions;
+
+        // TODO: evtl funktionierts in prod
+        // quantity: binanceTradeParams.quantity.toFixed(symbolInfo.baseAssetPrecision),
         const orderParams = {
             symbol: binanceTradeParams.binanceTokenName,
-            side: binanceTradeParams.side,
-            quantity: binanceTradeParams.quantity.toFixed(6),
-            positionSide: binanceTradeParams.positionSide,
+            side: binanceTradeParams.side === 'BUY' ? 'SELL' : 'BUY',
+            quantity: binanceTradeParams.quantity.toFixed(3),
+            type: 'MARKET'
         } as MarketNewFuturesOrder;
 
         const order = await binanceClient.futuresOrder(orderParams);
 
-        positionToBeCreated.quantity = Number(order.executedQty);
+        positionToBeCreated.quantity = Number(order.origQty);
         positionToBeCreated.binanceOrderId = order.orderId;
 
         trade.positions.push(positionToBeCreated);
@@ -262,16 +278,17 @@ export class BinanceTradeService {
     }
 
     private createBinanceClient(): Binance {
-        const { apiKey, apiSecret, test } = binanceApiCredentials as BinanceApiCredentials;
+        const { apiKey, apiSecret, testnet } = binanceApiCredentials as BinanceApiCredentials;
 
-        const binanceClient: Binance = require('node-binance-api')().options({
-            APIKEY: apiKey,
-            APISECRET: apiSecret,
+        const client = this.Binance({
+            apiKey: apiKey,
+            apiSecret: apiSecret,
             useServerTime: true,
-            test: test
+            httpFutures: "https://testnet.binancefuture.com",
+            wsFutures: "wss://stream.binancefuture.com",
         });
 
-        return binanceClient;
+        return client;
     }
 
     private async createBinanceTradeParams(trade: Trade, positionToBeCreated: Position, binanceClient: Binance): Promise<BinanceTradeParams> {
@@ -283,9 +300,12 @@ export class BinanceTradeService {
         }
 
         const binanceTokenName = trade.binanceTokenName;
-        const side = trade.isLong ? 'BUY' : "SELL";
-        const positionSide = trade.isLong ? "LONG" : "SHORT";
+        let side = trade.isLong ? 'BUY' : "SELL";
         const leverage = trade.leverage;
+
+        if(positionToBeCreated.type === PositionType.CLOSE) {
+            side = side === 'BUY' ? 'SELL' : 'BUY';
+        }
 
         // Get the latest price of the asset
         const ticker = await binanceClient.prices({ symbol: binanceTokenName });
@@ -297,7 +317,6 @@ export class BinanceTradeService {
         const binanceTradeParams = {
             binanceTokenName: binanceTokenName,
             side: side,
-            positionSide: positionSide,
             leverage: leverage,
             quantity: quantity
         } as BinanceTradeParams;
@@ -305,4 +324,16 @@ export class BinanceTradeService {
         return Promise.resolve(binanceTradeParams);
     }
 
+    private async getSymbolInfo(binanceClient: Binance, binanceTokenName: string) {
+
+        const exchangeInfo = await binanceClient.exchangeInfo();
+        
+        const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === binanceTokenName);
+        
+        if(!symbolInfo) {
+            throw new Error("info to symbol not found!! binanceTokenName: " + binanceTokenName);
+        }
+
+        return Promise.resolve(symbolInfo);
+    }
 }
