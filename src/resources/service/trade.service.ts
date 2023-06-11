@@ -44,7 +44,7 @@ export class TradeService {
 
             const foundTrade = allOpenTradesInDB.find((tradeInDB) => tradeInDB.gmxTradeId === trade.id);
 
-            if (foundTrade === undefined && trade.closedPosition === null && trade.increaseList.length === 1 && trade.decreaseList.length === 0) {
+            if (foundTrade === undefined && trade.status === 'open' && trade.closedPosition === null && trade.increaseList.length === 1 && trade.decreaseList.length === 0) {
                 newTrades.push(trade);
             }
         }
