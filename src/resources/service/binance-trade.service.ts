@@ -53,7 +53,7 @@ export class BinanceTradeService {
                 quantityInUsd: quantityInUsd
             }
 
-            const trade: Trade = {
+            const trade = {
                 gmxTradeId: gmxTrade.id,
                 timestamp: new Date(timestamp),
                 collateralToken: gmxTrade.collateralToken,
@@ -64,7 +64,7 @@ export class BinanceTradeService {
                 status: TradeStatus.OPEN,
                 quantityFactor: Number(QUANTITY_FACTOR),
                 positions: [position]
-            }
+            } as Trade;
 
             this.placeNewTradeInBinanceApi(trade, position);
 
@@ -231,7 +231,7 @@ export class BinanceTradeService {
 
         trade.positions.push(positionToBeCreated);
 
-        await this.tradeModel.updateOne(trade);
+        await trade.save();
 
         console.log("new position for trade placed: ", trade, positionToBeCreated);
     }
@@ -259,7 +259,7 @@ export class BinanceTradeService {
         // quantity: binanceTradeParams.quantity.toFixed(symbolInfo.baseAssetPrecision),
         const orderParams = {
             symbol: binanceTradeParams.binanceTokenName,
-            side: binanceTradeParams.side === 'BUY' ? 'SELL' : 'BUY',
+            side: binanceTradeParams.side,
             quantity: binanceTradeParams.quantity.toFixed(3),
             type: 'MARKET'
         } as MarketNewFuturesOrder;
@@ -272,7 +272,7 @@ export class BinanceTradeService {
         trade.positions.push(positionToBeCreated);
         trade.status = TradeStatus.CLOSED;
 
-        await this.tradeModel.updateOne(trade);
+        await trade.save();
 
         console.log("trade closed ", trade, positionToBeCreated);
     }

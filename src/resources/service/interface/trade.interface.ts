@@ -19,7 +19,7 @@ export interface CollateralTokenToTokenName {
     binanceTokenName: string;
 }
 
-export interface Trade {
+export interface Trade extends Document{
     gmxTradeId: string;
     timestamp: Date;
     collateralToken: string;
