@@ -9,16 +9,14 @@ export class GmxService {
     private traderAddress: string = "";
 
     private webSocketConnection: WebSocket | null = null;
-    private lastWsRestartAttempt: Date | null = null;
 
     private restartWsConnection() {
-        if (!this.webSocketConnection || this.webSocketConnection.readyState === WebSocket.CLOSED || this.webSocketConnection.readyState === WebSocket.CLOSING) {
-            if (this.lastWsRestartAttempt === null || this.lastWsRestartAttempt.getTime() + 60000 < new Date().getTime()) {
-                this.lastWsRestartAttempt = new Date();
-                this.webSocketConnection = null;
+        setInterval(() => {
+            if (!this.webSocketConnection || this.webSocketConnection.readyState === WebSocket.CLOSED) {
+                console.log("Restarting ws connection ", new Date());
                 this.initWsConnection();
             }
-        }
+        }, 30000);
     }
 
     private initWsConnection() {
@@ -34,7 +32,7 @@ export class GmxService {
             });
 
             this.webSocketConnection.onopen = () => {
-                console.log('Connected to the WebSocket server');
+                console.log('Connected to the WebSocket server ', new Date());
 
                 this.startTradeTracking(this.webSocketConnection);
             };
@@ -46,24 +44,14 @@ export class GmxService {
             };
 
             this.webSocketConnection.onclose = () => {
-                console.log('WebSocket connection closed - try to reconnect');
-
-                setTimeout(() => {
-                    this.restartWsConnection();
-                }, 10000);
+                console.log('WebSocket connection closed ', new Date());
             };
 
             this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
-                console.log('WebSocket error:', error);
-
-                setTimeout(() => {
-                    this.restartWsConnection();
-                }, 10000);
+                console.log('WebSocket onerror: ', error, new Date());
             };
         } catch (error) {
-            setTimeout(() => {
-                this.restartWsConnection();
-            }, 10000);
+            console.log('WebSocket error:', error, new Date());
         }
     }
 
@@ -86,7 +74,7 @@ export class GmxService {
 
         this.binanceTradeService.checkBinanceApiCredentials();
 
-        this.initWsConnection();
+        this.restartWsConnection();
 
         const startFeedback = {
             status: "started"
