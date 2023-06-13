@@ -9,6 +9,17 @@ export class GmxService {
     private traderAddress: string = "";
 
     private webSocketConnection: WebSocket | null = null;
+    private lastWsRestartAttempt: Date | null = null;
+
+    private restartWsConnection() {
+        if (!this.webSocketConnection || this.webSocketConnection.readyState === WebSocket.CLOSED || this.webSocketConnection.readyState === WebSocket.CLOSING) {
+            if (this.lastWsRestartAttempt === null || this.lastWsRestartAttempt.getTime() + 60000 < new Date().getTime()) {
+                this.lastWsRestartAttempt = new Date();
+                this.webSocketConnection = null;
+                this.initWsConnection();
+            }
+        }
+    }
 
     private initWsConnection() {
 
@@ -38,28 +49,27 @@ export class GmxService {
                 console.log('WebSocket connection closed - try to reconnect');
 
                 setTimeout(() => {
-                    this.webSocketConnection = null;
-                    this.initWsConnection();
+                    this.restartWsConnection();
                 }, 10000);
             };
 
             this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
                 console.log('WebSocket error:', error);
 
-                setTimeout(() => (
-                    this.initWsConnection()
-                ), 10000);
+                setTimeout(() => {
+                    this.restartWsConnection();
+                }, 10000);
             };
         } catch (error) {
-            setTimeout(() => (
-                this.initWsConnection()
-            ), 10000);
+            setTimeout(() => {
+                this.restartWsConnection();
+            }, 10000);
         }
     }
 
     private startTradeTracking(webSocketConnection: WebSocket | null) {
 
-        if(!webSocketConnection) {
+        if (!webSocketConnection) {
             return;
         }
 
