@@ -59,7 +59,7 @@ export class GmxService {
 
     private startTradeTracking(webSocketConnection: WebSocket | null) {
 
-        if(!webSocketConnection) {
+        if(!webSocketConnection || webSocketConnection.readyState !== WebSocket.OPEN) {
             return;
         }
 
