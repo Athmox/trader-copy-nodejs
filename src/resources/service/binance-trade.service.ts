@@ -19,7 +19,7 @@ interface BinanceTradeParams {
 
 
 export class BinanceTradeService {
-    
+
     Binance = require('binance-api-node').default;
 
     private tradeModel = TradeModel;
@@ -29,12 +29,12 @@ export class BinanceTradeService {
 
         const { QUANTITY_FACTOR } = process.env;
 
-        const collateralTokenToTokenName = await this.collateralTokenToTokenNameModel.findOne({ collateralToken: gmxTrade.collateralToken });
+        const collateralTokenToTokenName = await this.collateralTokenToTokenNameModel.findOne({ collateralToken: { $regex: new RegExp(gmxTrade.collateralToken, "i") } });
 
         // check if trade to that collataralToken is already open
         const openTrade = await this.tradeModel.findOne({ collateralToken: gmxTrade.collateralToken, status: TradeStatus.OPEN });
 
-        if(openTrade !== null) {
+        if (openTrade !== null) {
             throw new Error("trade to that collateralToken is already open!! collateralToken: " + gmxTrade.collateralToken);
         }
 
@@ -171,7 +171,7 @@ export class BinanceTradeService {
             // when already set it throws an error
             console.log("set marginType error: ", error);
         }
-        
+
         try {
             await binanceClient.futuresPositionModeChange({
                 dualSidePosition: "false",
@@ -245,8 +245,8 @@ export class BinanceTradeService {
         const symbolInfo = await this.getSymbolInfo(binanceClient, binanceTradeParams.binanceTokenName);
 
         let quantityOfAllPositions = 0;
-        for(const position of trade.positions) {
-            if (position?.quantity && position.type === PositionType.INCREASE) { 
+        for (const position of trade.positions) {
+            if (position?.quantity && position.type === PositionType.INCREASE) {
                 quantityOfAllPositions += position.quantity;
             } else if (position?.quantity && position.type === PositionType.DECREASE) {
                 quantityOfAllPositions -= position.quantity;
@@ -303,7 +303,7 @@ export class BinanceTradeService {
         let side = trade.isLong ? 'BUY' : "SELL";
         const leverage = trade.leverage;
 
-        if(positionToBeCreated.type === PositionType.CLOSE) {
+        if (positionToBeCreated.type === PositionType.CLOSE) {
             side = side === 'BUY' ? 'SELL' : 'BUY';
         }
 
@@ -312,7 +312,8 @@ export class BinanceTradeService {
         const price = parseFloat(ticker[binanceTokenName]);
 
         // Calculate the quantity based on USD amount and current price
-        const quantity = quantityInUsd / price;
+        // Multiply with leverage!!
+        const quantity = (quantityInUsd / price) * leverage;
 
         const binanceTradeParams = {
             binanceTokenName: binanceTokenName,
@@ -327,10 +328,10 @@ export class BinanceTradeService {
     private async getSymbolInfo(binanceClient: Binance, binanceTokenName: string) {
 
         const exchangeInfo = await binanceClient.exchangeInfo();
-        
+
         const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === binanceTokenName);
-        
-        if(!symbolInfo) {
+
+        if (!symbolInfo) {
             throw new Error("info to symbol not found!! binanceTokenName: " + binanceTokenName);
         }
 
