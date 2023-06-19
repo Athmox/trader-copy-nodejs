@@ -5,6 +5,7 @@ import { Position, PositionType, PositionsToBeCreated, Trade, TradeClosureToBeCr
 import { BinanceApiCredentials } from './interface/trade.interface';
 import binanceApiCredentials from '../../../binanceApiCredentials.json';
 import { Binance, MarketNewFuturesOrder } from 'binance-api-node';
+import { Logger } from '@/utils/logger';
 
 /*
 * die positions müssen unbedingt quantity und quantityInUsd speichern für den close trade! 
@@ -20,12 +21,14 @@ interface BinanceTradeParams {
 
 export class BinanceTradeService {
 
+    private logger = new Logger();
+
     Binance = require('binance-api-node').default;
 
     private tradeModel = TradeModel;
     private collateralTokenToTokenNameModel = CollateralTokenToTokenNameModel;
 
-    public async handleNewTrade(gmxTrade: GmxTrade) {
+    public async handleNewTrade(gmxTrade: GmxTrade): Promise<void> {
 
         const { QUANTITY_FACTOR } = process.env;
 
@@ -34,7 +37,7 @@ export class BinanceTradeService {
         // check if trade to that collataralToken is already open
         const openTrade = await this.tradeModel.findOne({ collateralToken: gmxTrade.collateralToken, status: TradeStatus.OPEN });
 
-        if (openTrade !== null) {
+        if (openTrade) {
             throw new Error("trade to that collateralToken is already open!! collateralToken: " + gmxTrade.collateralToken);
         }
 
@@ -66,14 +69,18 @@ export class BinanceTradeService {
                 positions: [position]
             } as Trade;
 
-            this.placeNewTradeInBinanceApi(trade, position);
+            await this.placeNewTradeInBinanceApi(trade, position);
+
+            return Promise.resolve();
 
         } else if (collateralTokenToTokenName === null) {
-            console.error("collateralTokenToTokenName not found!! collateralToken: ", gmxTrade.collateralToken);
+            this.logger.logInfo("collateralTokenToTokenName not found!! collateralToken: " + gmxTrade.collateralToken);
+            return Promise.resolve();
         }
+        return Promise.resolve();
     }
 
-    public async handleNewPosition(gmxNewPositions: PositionsToBeCreated) {
+    public async handleNewPosition(gmxNewPositions: PositionsToBeCreated): Promise<void> {
 
         const trade = await this.tradeModel.findOne({ gmxTradeId: gmxNewPositions.gmxTradeId });
 
@@ -92,13 +99,15 @@ export class BinanceTradeService {
                 quantityInUsd: this.calculateQuantityInUsd(gmxNewPosition.unparsedQuantityInUsd, trade.quantityFactor)
             }
 
-            console.log("new position processed: ", newPosition);
+            this.logger.logInfo("new position processed: " + newPosition);
 
-            this.placeNewPositionInBinanceApi(trade, newPosition);
+            await this.placeNewPositionInBinanceApi(trade, newPosition);
         }
+
+        return Promise.resolve();
     }
 
-    public async handleClosedTrade(closedTrade: TradeClosureToBeCreated) {
+    public async handleClosedTrade(closedTrade: TradeClosureToBeCreated): Promise<void> {
 
         const tradeToBeClosed = await this.tradeModel.findOne({ gmxTradeId: closedTrade.oldGmxTradeId });
 
@@ -115,9 +124,11 @@ export class BinanceTradeService {
 
         tradeToBeClosed.gmxTradeId = closedTrade.newGmxTradeId;
 
-        console.log("closed position processed: ", closePosition);
+        this.logger.logInfo("closed position processed: " + closePosition);
 
-        this.closeTradeInBinanceApi(tradeToBeClosed, closePosition);
+        await this.closeTradeInBinanceApi(tradeToBeClosed, closePosition);
+
+        return Promise.resolve();
     }
 
     public checkBinanceApiCredentials() {
@@ -126,7 +137,7 @@ export class BinanceTradeService {
 
         if (apiKey === undefined || apiSecret === undefined) {
             const errorText: string = "binance api credentials not found - see readme!!";
-            console.error(errorText);
+            this.logger.logInfo(errorText);
             throw new Error(errorText);
         }
     }
@@ -140,21 +151,7 @@ export class BinanceTradeService {
         return (quantityInUsd / 10 ** 30) * QUANTITY_FACTOR;
     }
 
-    private async placeNewTradeInBinanceApi(trade: Trade, positionToBeCreated: Position) {
-
-        /*
-        * Man kann so wie es aussieht nur einen future trade mit dem jeweiligen leverage pro trading pair haben
-        * Man muss überprüfen ob man bei gmx mehrere verschiedene futures auf den gleichen trading pair haben kann
-        * Wenn das möglich ist muss man beim erstellen eines neuen trades das überprüfen und verhindern
-        * 
-        * Wenn man verkaufen will muss man nur mehr einen order erstellen und die quantity auf 0 setzen
-        * 
-        * Wenn man seine position vergrößern will muss man anscheinend die quantity der position erhöhen
-        * Das gleiche prinzip gilt für verkleinern
-        * Die QuantityUSD Umrechnung nicht vergessen!!
-        * 
-        * Im Testnet ind executedQty immer 0 -> checken ob das im mainnet auch so ist
-        */
+    private async placeNewTradeInBinanceApi(trade: Trade, positionToBeCreated: Position): Promise<void> {
 
         const binanceClient: Binance = this.createBinanceClient()
 
@@ -169,7 +166,7 @@ export class BinanceTradeService {
             });
         } catch (error) {
             // when already set it throws an error
-            console.log("set marginType error: ", error);
+            this.logger.logInfo("set marginType error: " + error);
         }
 
         try {
@@ -179,7 +176,7 @@ export class BinanceTradeService {
             });
         } catch (error) {
             // when already set it throws an error
-            console.log("set dualSidePosition error: ", error);
+            this.logger.logInfo("set dualSidePosition error: " + error);
         }
 
         await binanceClient.futuresLeverage({
@@ -204,10 +201,12 @@ export class BinanceTradeService {
 
         await this.tradeModel.create(trade);
 
-        console.log("new trade placed: ", trade);
+        this.logger.logInfo("new trade placed: " + trade);
+
+        return Promise.resolve();
     }
 
-    private async placeNewPositionInBinanceApi(trade: Trade, positionToBeCreated: Position) {
+    private async placeNewPositionInBinanceApi(trade: Trade, positionToBeCreated: Position): Promise<void> {
 
         const binanceClient: Binance = this.createBinanceClient()
 
@@ -233,10 +232,12 @@ export class BinanceTradeService {
 
         await trade.save();
 
-        console.log("new position for trade placed: ", trade, positionToBeCreated);
+        this.logger.logInfo("new position for trade placed: " + trade + positionToBeCreated);
+
+        return Promise.resolve();
     }
 
-    private async closeTradeInBinanceApi(trade: Trade, positionToBeCreated: Position) {
+    private async closeTradeInBinanceApi(trade: Trade, positionToBeCreated: Position): Promise<void> {
 
         const binanceClient: Binance = this.createBinanceClient()
 
@@ -274,7 +275,9 @@ export class BinanceTradeService {
 
         await trade.save();
 
-        console.log("trade closed ", trade, positionToBeCreated);
+        this.logger.logInfo("trade closed " + trade + positionToBeCreated);
+        
+        return Promise.resolve();
     }
 
     private createBinanceClient(): Binance {

@@ -15,30 +15,30 @@ export class TradeService {
 
     public async handleNewTrades(trades: GmxTrade[]) {
 
-        const allOpenTradesInDB = await this.tradeModel.find({ status: TradeStatus.OPEN });
+        const closedTrades = await this.checkForClosedTrades(trades);
 
-        const newTrades = await this.checkForNewTrades(trades, allOpenTradesInDB);
-
-        for (const newTrade of newTrades) {
-            await this.binanceTradeService.handleNewTrade(newTrade);
+        for (const closedTrade of closedTrades) {
+            await this.binanceTradeService.handleClosedTrade(closedTrade);
         }
 
-        const newPositions = await this.checkForNewPositions(trades, allOpenTradesInDB);
+        const newPositions = await this.checkForNewPositions(trades);
 
         for (const newPosition of newPositions) {
             await this.binanceTradeService.handleNewPosition(newPosition);
         }
 
-        const closedTrades = await this.checkForClosedTrades(trades, allOpenTradesInDB);
+        const newTrades = await this.checkForNewTrades(trades);
 
-        for (const closedTrade of closedTrades) {
-            await this.binanceTradeService.handleClosedTrade(closedTrade);
+        for (const newTrade of newTrades) {
+            await this.binanceTradeService.handleNewTrade(newTrade);
         }
     }
 
-    private async checkForNewTrades(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<GmxTrade[]> {
+    private async checkForNewTrades(trades: GmxTrade[]): Promise<GmxTrade[]> {
 
         // TODO dont include trades that are older than 15 minutes
+
+        const allOpenTradesInDB = await this.tradeModel.find({ status: TradeStatus.OPEN });
 
         const newTrades: GmxTrade[] = [];
 
@@ -54,14 +54,16 @@ export class TradeService {
         return Promise.resolve(newTrades);
     }
 
-    private async checkForNewPositions(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<PositionToBeCreated[]> {
+    private async checkForNewPositions(trades: GmxTrade[]): Promise<PositionToBeCreated[]> {
+
+        const allOpenTradesInDB = await this.tradeModel.find({ status: TradeStatus.OPEN });
 
         const newPositionsToBeCreated: PositionToBeCreated[] = [];
 
         for (const trade of trades) {
             const foundTrade = allOpenTradesInDB.find((tradeInDB) => tradeInDB.gmxTradeId === trade.id);
 
-            if (foundTrade !== undefined) {
+            if (foundTrade !== undefined && foundTrade.status === TradeStatus.OPEN) {
                 const newPositions: Position[] = [];
 
                 // find items of increaseList that are not in trade.positions by gmxTradeId
@@ -113,7 +115,9 @@ export class TradeService {
         return Promise.resolve(newPositionsToBeCreated);
     }
 
-    private async checkForClosedTrades(trades: GmxTrade[], allOpenTradesInDB: Trade[]): Promise<TradeClosureToBeCreated[]> {
+    private async checkForClosedTrades(trades: GmxTrade[]): Promise<TradeClosureToBeCreated[]> {
+
+        const allOpenTradesInDB = await this.tradeModel.find({ status: TradeStatus.OPEN });
 
         const closedTrades: TradeClosureToBeCreated[] = [];
 

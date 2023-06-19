@@ -2,8 +2,11 @@ import GmxTrade from "./interface/gmx.interface";
 import WebSocket from 'ws';
 import { TradeService } from "./trade.service";
 import { BinanceTradeService } from "./binance-trade.service";
+import { Logger } from "@/utils/logger";
 
 export class GmxService {
+
+    private logger = new Logger();
     private tradeService = new TradeService();
     private binanceTradeService = new BinanceTradeService();
     private traderAddress: string = "";
@@ -13,7 +16,7 @@ export class GmxService {
     private restartWsConnection() {
         setInterval(() => {
             if (!this.webSocketConnection || this.webSocketConnection.readyState === WebSocket.CLOSED) {
-                console.log("Restarting ws connection ", new Date());
+                this.logger.logInfo("Restarting ws connection " + new Date());
                 this.initWsConnection();
             }
         }, 30000);
@@ -32,7 +35,7 @@ export class GmxService {
             });
 
             this.webSocketConnection.onopen = () => {
-                console.log('Connected to the WebSocket server ', new Date());
+                this.logger.logInfo('Connected to the WebSocket server ' + new Date());
 
                 this.startTradeTracking(this.webSocketConnection);
             };
@@ -44,26 +47,26 @@ export class GmxService {
             };
 
             this.webSocketConnection.onclose = () => {
-                console.log('WebSocket connection closed ', new Date());
+                this.logger.logInfo('WebSocket connection closed ' + new Date());
             };
 
             this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
-                console.log('WebSocket onerror: ', error, new Date());
+                this.logger.logInfo('WebSocket onerror: ' + error + new Date());
             };
         } catch (error) {
-            console.log('WebSocket error:', error, new Date());
+            this.logger.logInfo('WebSocket onerror: ' + error + new Date());
         }
     }
 
     private startTradeTracking(webSocketConnection: WebSocket | null) {
 
-        if(!webSocketConnection || webSocketConnection.readyState !== WebSocket.OPEN) {
+        if (!webSocketConnection || webSocketConnection.readyState !== WebSocket.OPEN) {
             return;
         }
 
         const websocketTopic = `{"topic":"requestAccountTradeList","body":{"account":"` + this.traderAddress + `","timeInterval":5256000,"chain":42161}}`;
         setTimeout(() => {
-            console.log("Sending message to server");
+            this.logger.logInfo("Sending message to server " + new Date());
             webSocketConnection.send(websocketTopic);
         }, 5000);
     }

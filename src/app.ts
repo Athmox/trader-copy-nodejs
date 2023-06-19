@@ -6,10 +6,12 @@ import morgan from 'morgan';
 import Controller from '@/utils/interfaces/controller.interface';
 import ErrorMiddleware from '@/middleware/error.middleware';
 import helmet from 'helmet';
+import { Logger } from './utils/logger';
 
 class App {
     public express: Application;
     public port: number;
+    public logger = new Logger();
 
     constructor(controllers: Controller[], port: number) {
         this.express = express();
@@ -30,6 +32,7 @@ class App {
         this.express.use(express.json());
         this.express.use(express.urlencoded({ extended: false }));
         this.express.use(compression());
+        this.logger.createLogger();
     }
 
     private initialiseControllers(controllers: Controller[]): void {
