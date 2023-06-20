@@ -1,4 +1,4 @@
-import CollateralTokenToTokenNameModel from '@/resources/service/model/collateral-token-to-token-name.model';
+import IndexTokenToBinanceNameModel from '@/resources/service/model/index-token-to-binance-name.model';
 import TradeModel from '@/resources/service/model/trade.model';
 import GmxTrade from './interface/gmx.interface';
 import { Position, PositionType, PositionsToBeCreated, Trade, TradeClosureToBeCreated, TradeStatus } from './interface/trade.interface';
@@ -26,22 +26,21 @@ export class BinanceTradeService {
     Binance = require('binance-api-node').default;
 
     private tradeModel = TradeModel;
-    private collateralTokenToTokenNameModel = CollateralTokenToTokenNameModel;
+    private indexTokenToBinanceNameModel = IndexTokenToBinanceNameModel;
 
     public async handleNewTrade(gmxTrade: GmxTrade): Promise<void> {
 
         const { QUANTITY_FACTOR } = process.env;
 
-        const collateralTokenToTokenName = await this.collateralTokenToTokenNameModel.findOne({ collateralToken: { $regex: new RegExp(gmxTrade.collateralToken, "i") } });
+        const indexTokenToBinanceName = await this.indexTokenToBinanceNameModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") } });
 
-        // check if trade to that collataralToken is already open
-        const openTrade = await this.tradeModel.findOne({ collateralToken: gmxTrade.collateralToken, status: TradeStatus.OPEN });
+        const openTrade = await this.tradeModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") }, status: TradeStatus.OPEN });
 
         if (openTrade) {
-            throw new Error("trade to that collateralToken is already open!! collateralToken: " + gmxTrade.collateralToken);
+            throw new Error("trade to that indexToken is already open!! indexToken: " + gmxTrade.indexToken);
         }
 
-        if (collateralTokenToTokenName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0) {
+        if (indexTokenToBinanceName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0) {
 
             const increasePosition = gmxTrade.increaseList[0];
 
@@ -59,9 +58,9 @@ export class BinanceTradeService {
             const trade = {
                 gmxTradeId: gmxTrade.id,
                 timestamp: new Date(timestamp),
-                collateralToken: gmxTrade.collateralToken,
-                colleteralTokenName: collateralTokenToTokenName.collateralTokenName,
-                binanceTokenName: collateralTokenToTokenName.binanceTokenName,
+                indexToken: indexTokenToBinanceName.indexToken,
+                tokenName: indexTokenToBinanceName.tokenName,
+                binanceTokenName: indexTokenToBinanceName.binanceTokenName,
                 leverage: leverage,
                 isLong: gmxTrade.isLong,
                 status: TradeStatus.OPEN,
@@ -73,8 +72,8 @@ export class BinanceTradeService {
 
             return Promise.resolve();
 
-        } else if (collateralTokenToTokenName === null) {
-            this.logger.logInfo("collateralTokenToTokenName not found!! collateralToken: " + gmxTrade.collateralToken);
+        } else if (indexTokenToBinanceName === null) {
+            this.logger.logInfo("indexTokenToBinanceName not found!! indexToken: " + gmxTrade.indexToken);
             return Promise.resolve();
         }
         return Promise.resolve();

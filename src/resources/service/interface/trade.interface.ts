@@ -13,17 +13,17 @@ export enum PositionType {
     CLOSE = "CLOSE"
 }
 
-export interface CollateralTokenToTokenName { 
-    collateralToken: string;
-    collateralTokenName: string;
+export interface IndexTokenToBinanceName { 
+    indexToken: string;
+    tokenName: string;
     binanceTokenName: string;
 }
 
 export interface Trade extends Document{
     gmxTradeId: string;
     timestamp: Date;
-    collateralToken: string;
-    colleteralTokenName: string;
+    indexToken: string;
+    tokenName: string;
     binanceTokenName: string;
     leverage: number;
     isLong: boolean;
