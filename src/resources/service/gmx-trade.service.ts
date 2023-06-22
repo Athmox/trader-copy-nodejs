@@ -16,7 +16,7 @@ export class GmxService {
     private restartWsConnection() {
         setInterval(() => {
             if (!this.webSocketConnection || this.webSocketConnection.readyState === WebSocket.CLOSED) {
-                this.logger.logInfo("Restarting ws connection " + new Date());
+                this.logger.logInfo("Restarting ws connection ", new Date());
                 this.initWsConnection();
             }
         }, 30000);
@@ -35,7 +35,7 @@ export class GmxService {
             });
 
             this.webSocketConnection.onopen = () => {
-                this.logger.logInfo('Connected to the WebSocket server ' + new Date());
+                this.logger.logInfo('Connected to the WebSocket server ', new Date());
 
                 this.startTradeTracking(this.webSocketConnection);
             };
@@ -47,14 +47,14 @@ export class GmxService {
             };
 
             this.webSocketConnection.onclose = () => {
-                this.logger.logInfo('WebSocket connection closed ' + new Date());
+                this.logger.logInfo('WebSocket connection closed ', new Date());
             };
 
             this.webSocketConnection.onerror = (error: WebSocket.ErrorEvent) => {
-                this.logger.logInfo('WebSocket onerror: ' + error + new Date());
+                this.logger.logInfo('WebSocket onerror: ', error, new Date());
             };
         } catch (error) {
-            this.logger.logInfo('WebSocket onerror: ' + error + new Date());
+            this.logger.logInfo('WebSocket onerror: ', error, new Date());
         }
     }
 
@@ -66,7 +66,7 @@ export class GmxService {
 
         const websocketTopic = `{"topic":"requestAccountTradeList","body":{"account":"` + this.traderAddress + `","timeInterval":5256000,"chain":42161}}`;
         setTimeout(() => {
-            this.logger.logInfo("Sending message to server " + new Date());
+            this.logger.logInfo("Sending message to server", new Date());
             webSocketConnection.send(websocketTopic);
         }, 5000);
     }

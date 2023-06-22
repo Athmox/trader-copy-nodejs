@@ -37,7 +37,8 @@ export class BinanceTradeService {
         const openTrade = await this.tradeModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") }, status: TradeStatus.OPEN });
 
         if (openTrade) {
-            throw new Error("trade to that indexToken is already open!! indexToken: " + gmxTrade.indexToken);
+            this.logger.logInfo("trade to that indexToken is already open!! indexToken: ", gmxTrade.indexToken);
+            return Promise.resolve();
         }
 
         if (indexTokenToBinanceName !== null && gmxTrade.increaseList.length === 1 && gmxTrade.decreaseList.length === 0) {
@@ -73,7 +74,7 @@ export class BinanceTradeService {
             return Promise.resolve();
 
         } else if (indexTokenToBinanceName === null) {
-            this.logger.logInfo("indexTokenToBinanceName not found!! indexToken: " + gmxTrade.indexToken);
+            this.logger.logInfo("indexTokenToBinanceName not found!! indexToken: ", gmxTrade.indexToken);
             return Promise.resolve();
         }
         return Promise.resolve();
@@ -84,7 +85,8 @@ export class BinanceTradeService {
         const trade = await this.tradeModel.findOne({ gmxTradeId: gmxNewPositions.gmxTradeId });
 
         if (trade === null || trade === undefined) {
-            throw new Error("trade not found!! new position connot be created!! gmxTradeId: " + gmxNewPositions.gmxTradeId);
+            this.logger.logInfo("trade not found!! new position connot be created!! gmxTradeId: ", gmxNewPositions.gmxTradeId);
+            return Promise.resolve();
         }
 
         for (const gmxNewPosition of gmxNewPositions.positions) {
@@ -98,7 +100,7 @@ export class BinanceTradeService {
                 quantityInUsd: this.calculateQuantityInUsd(gmxNewPosition.unparsedQuantityInUsd, trade.quantityFactor)
             }
 
-            this.logger.logInfo("new position processed: " + newPosition);
+            this.logger.logInfo("new position processed: ", newPosition);
 
             await this.placeNewPositionInBinanceApi(trade, newPosition);
         }
@@ -111,7 +113,8 @@ export class BinanceTradeService {
         const tradeToBeClosed = await this.tradeModel.findOne({ gmxTradeId: closedTrade.oldGmxTradeId });
 
         if (tradeToBeClosed === null || tradeToBeClosed === undefined) {
-            throw new Error("old trade not found!! closed trade connot be created!! gmxTradeId: " + closedTrade.oldGmxTradeId);
+            this.logger.logInfo("trade not found!! closed trade connot be created!! gmxTradeId: ", closedTrade.oldGmxTradeId);
+            return Promise.resolve();
         }
 
         const closePosition: Position = {
@@ -123,7 +126,7 @@ export class BinanceTradeService {
 
         tradeToBeClosed.gmxTradeId = closedTrade.newGmxTradeId;
 
-        this.logger.logInfo("closed position processed: " + closePosition);
+        this.logger.logInfo("closed position processed: ", closePosition);
 
         await this.closeTradeInBinanceApi(tradeToBeClosed, closePosition);
 
@@ -165,7 +168,7 @@ export class BinanceTradeService {
             });
         } catch (error) {
             // when already set it throws an error
-            this.logger.logInfo("set marginType error: " + error);
+            this.logger.logInfo("set marginType error: ", error);
         }
 
         try {
@@ -175,7 +178,7 @@ export class BinanceTradeService {
             });
         } catch (error) {
             // when already set it throws an error
-            this.logger.logInfo("set dualSidePosition error: " + error);
+            this.logger.logInfo("set dualSidePosition error: ", error);
         }
 
         await binanceClient.futuresLeverage({
@@ -200,7 +203,7 @@ export class BinanceTradeService {
 
         await this.tradeModel.create(trade);
 
-        this.logger.logInfo("new trade placed: " + trade);
+        this.logger.logInfo("new trade placed: ", trade);
 
         return Promise.resolve();
     }
@@ -231,7 +234,7 @@ export class BinanceTradeService {
 
         await trade.save();
 
-        this.logger.logInfo("new position for trade placed: " + trade + positionToBeCreated);
+        this.logger.logInfo("new position for trade placed: ", trade, positionToBeCreated);
 
         return Promise.resolve();
     }
@@ -274,7 +277,7 @@ export class BinanceTradeService {
 
         await trade.save();
 
-        this.logger.logInfo("trade closed " + trade + positionToBeCreated);
+        this.logger.logInfo("trade closed ", trade, positionToBeCreated);
         
         return Promise.resolve();
     }
@@ -334,7 +337,7 @@ export class BinanceTradeService {
         const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === binanceTokenName);
 
         if (!symbolInfo) {
-            throw new Error("info to symbol not found!! binanceTokenName: " + binanceTokenName);
+            this.logger.logInfo("info to symbol not found!! binanceTokenName: ", binanceTokenName);
         }
 
         return Promise.resolve(symbolInfo);

@@ -10,17 +10,28 @@ export class Logger {
             format: winston.format.simple(),
             transports: [
                 new winston.transports.File({ filename: 'app.log' }), // Log to a file
-              ],
+            ],
         });
     }
 
-    public logInfo(message: string) {
-        if(this.logger === null) {
+    public logInfo(message: string, ...args: any[]) {
+        if (this.logger === null) {
             this.createLogger();
         }
 
-        console.log(message);
-        this.logger?.info(message);
+        let constructedMessage = message;
+
+        if (args.length > 0) {
+            args.forEach((arg, index) => {
+                if (arg) {
+                    constructedMessage += " " + JSON.stringify(arg);
+                }
+            }
+            );
+        }
+
+        console.log(constructedMessage);
+        this.logger?.info(constructedMessage);
     }
 
 }
