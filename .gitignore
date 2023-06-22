@@ -1,3 +1,4 @@
 dist
 node_modules
 binanceApiCredentials.json
+app.log
