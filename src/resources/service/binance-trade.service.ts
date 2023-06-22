@@ -36,7 +36,7 @@ export class BinanceTradeService {
 
         const openTrade = await this.tradeModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") }, status: TradeStatus.OPEN });
 
-        if (openTrade) {
+        if (openTrade && openTrade.status === TradeStatus.OPEN) {
             this.logger.logInfo("trade to that indexToken is already open!! indexToken: ", gmxTrade.indexToken);
             return Promise.resolve();
         }
