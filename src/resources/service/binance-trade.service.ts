@@ -8,7 +8,7 @@ import { Binance, MarketNewFuturesOrder } from 'binance-api-node';
 import { Logger } from '@/utils/logger';
 
 /*
-* die positions müssen unbedingt quantity und quantityInUsd speichern für den close trade! 
+* TODO: alle eth addr uppercase!!
 */
 
 interface BinanceTradeParams {
@@ -37,7 +37,7 @@ export class BinanceTradeService {
         const openTrade = await this.tradeModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") }, status: TradeStatus.OPEN });
 
         if (openTrade && openTrade.status === TradeStatus.OPEN) {
-            this.logger.logInfo("trade to that indexToken is already open!! indexToken: ", gmxTrade.indexToken);
+            this.logger.logInfo("trade to that indexToken is already open!! indexToken: " + gmxTrade.indexToken, gmxTrade);
             return Promise.resolve();
         }
 
@@ -50,14 +50,14 @@ export class BinanceTradeService {
             const quantityInUsd = this.calculateQuantityInUsd(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
             const position: Position = {
-                gmxPositionId: increasePosition.id,
+                gmxPositionId: increasePosition.id.toUpperCase(),
                 timestamp: new Date(timestamp),
                 type: PositionType.INCREASE,
                 quantityInUsd: quantityInUsd
             }
 
             const trade = {
-                gmxTradeId: gmxTrade.id,
+                gmxTradeId: gmxTrade.id.toUpperCase(),
                 timestamp: new Date(timestamp),
                 indexToken: indexTokenToBinanceName.indexToken,
                 tokenName: indexTokenToBinanceName.tokenName,
