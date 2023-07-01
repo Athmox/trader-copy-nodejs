@@ -47,6 +47,9 @@ export class TradeService {
             const foundTrade = allOpenTradesInDB.find((tradeInDB) => tradeInDB.gmxTradeId === trade.id.toUpperCase());
 
             if (foundTrade === undefined && trade.status === 'open' && trade.closedPosition === null && trade.increaseList.length === 1 && trade.decreaseList.length === 0) {
+                trade.id = trade.id.toUpperCase();
+                trade.indexToken = trade.indexToken.toUpperCase();
+                trade.increaseList[0].id = trade.increaseList[0].id.toUpperCase();
                 newTrades.push(trade);
             }
         }
@@ -61,7 +64,7 @@ export class TradeService {
         const newPositionsToBeCreated: PositionToBeCreated[] = [];
 
         for (const trade of trades) {
-            const foundTrade = allOpenTradesInDB.find((tradeInDB) => tradeInDB.gmxTradeId === trade.id);
+            const foundTrade = allOpenTradesInDB.find((tradeInDB) => tradeInDB.gmxTradeId === trade.id.toUpperCase());
 
             if (foundTrade !== undefined && foundTrade.status === TradeStatus.OPEN) {
                 const newPositions: Position[] = [];
@@ -70,11 +73,11 @@ export class TradeService {
                 const increaseList = trade.increaseList;
                 for (const increasePosition of increaseList) {
 
-                    const foundPosition = foundTrade.positions.find((position) => position.gmxPositionId === increasePosition.id);
+                    const foundPosition = foundTrade.positions.find((position) => position.gmxPositionId === increasePosition.id.toUpperCase());
 
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
-                            gmxPositionId: increasePosition.id,
+                            gmxPositionId: increasePosition.id.toUpperCase(),
                             unparsedQuantityInUsd: Number(increasePosition.collateralDelta),
                             timestamp: new Date(Number(increasePosition.timestamp) * 1000),
                             type: PositionType.INCREASE
@@ -87,11 +90,11 @@ export class TradeService {
                 // find items of decreaseList that are not in trade.positions by gmxTradeId
                 const decreaseList = trade.decreaseList;
                 for (const decreasePosition of decreaseList) {
-                    const foundPosition = foundTrade.positions.find((position) => position.gmxPositionId === decreasePosition.id);
+                    const foundPosition = foundTrade.positions.find((position) => position.gmxPositionId === decreasePosition.id.toUpperCase());
 
                     if (foundPosition === undefined) {
                         const newPosition: Position = {
-                            gmxPositionId: decreasePosition.id,
+                            gmxPositionId: decreasePosition.id.toUpperCase(),
                             unparsedQuantityInUsd: Number(decreasePosition.collateralDelta),
                             timestamp: new Date(Number(decreasePosition.timestamp) * 1000),
                             type: PositionType.DECREASE
@@ -103,7 +106,7 @@ export class TradeService {
 
                 if (newPositions.length <= 2) {
                     const positionToBeCreated: PositionToBeCreated = {
-                        gmxTradeId: trade.id,
+                        gmxTradeId: foundTrade.gmxTradeId,
                         positions: newPositions
                     };
 
@@ -130,7 +133,7 @@ export class TradeService {
                 const firstIncreasePosition = trade.increaseList[0];
 
                 const foundTrade = allOpenTradesInDB.find(tradeInDB => {
-                    const foundPosition = tradeInDB.positions.find(position => position.gmxPositionId === firstIncreasePosition.id);
+                    const foundPosition = tradeInDB.positions.find(position => position.gmxPositionId === firstIncreasePosition.id.toUpperCase());
                     if (foundPosition) {
                         return true;
                     }
@@ -147,7 +150,7 @@ export class TradeService {
                     }
 
                     const closePosition: Position = {
-                        gmxPositionId: closedPosition.id,
+                        gmxPositionId: closedPosition.id.toUpperCase(),
                         timestamp: new Date(Number(closedPosition.timestamp) * 1000),
                         type: PositionType.CLOSE,
                         quantity: totalQuantityOfAllPositions,
@@ -156,7 +159,7 @@ export class TradeService {
 
                     const tradeClosureToBeCreated: TradeClosureToBeCreated = {
                         oldGmxTradeId: foundTrade.gmxTradeId,
-                        newGmxTradeId: trade.id,
+                        newGmxTradeId: trade.id.toUpperCase(),
                         closurePosition: closePosition
                     };
 

@@ -32,9 +32,9 @@ export class BinanceTradeService {
 
         const { QUANTITY_FACTOR } = process.env;
 
-        const indexTokenToBinanceName = await this.indexTokenToBinanceNameModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") } });
+        const indexTokenToBinanceName = await this.indexTokenToBinanceNameModel.findOne({ indexToken: gmxTrade.indexToken });
 
-        const openTrade = await this.tradeModel.findOne({ indexToken: { $regex: new RegExp(gmxTrade.indexToken, "i") }, status: TradeStatus.OPEN });
+        const openTrade = await this.tradeModel.findOne({ indexToken: gmxTrade.indexToken, status: TradeStatus.OPEN });
 
         if (openTrade && openTrade.status === TradeStatus.OPEN) {
             this.logger.logInfo("trade to that indexToken is already open!! indexToken: " + gmxTrade.indexToken, gmxTrade);
@@ -50,14 +50,14 @@ export class BinanceTradeService {
             const quantityInUsd = this.calculateQuantityInUsd(Number(increasePosition.collateralDelta), Number(QUANTITY_FACTOR));
 
             const position: Position = {
-                gmxPositionId: increasePosition.id.toUpperCase(),
+                gmxPositionId: increasePosition.id,
                 timestamp: new Date(timestamp),
                 type: PositionType.INCREASE,
                 quantityInUsd: quantityInUsd
             }
 
             const trade = {
-                gmxTradeId: gmxTrade.id.toUpperCase(),
+                gmxTradeId: gmxTrade.id,
                 timestamp: new Date(timestamp),
                 indexToken: indexTokenToBinanceName.indexToken,
                 tokenName: indexTokenToBinanceName.tokenName,
@@ -65,8 +65,7 @@ export class BinanceTradeService {
                 leverage: leverage,
                 isLong: gmxTrade.isLong,
                 status: TradeStatus.OPEN,
-                quantityFactor: Number(QUANTITY_FACTOR),
-                positions: [position]
+                quantityFactor: Number(QUANTITY_FACTOR)
             } as Trade;
 
             await this.placeNewTradeInBinanceApi(trade, position);
@@ -90,8 +89,6 @@ export class BinanceTradeService {
         }
 
         for (const gmxNewPosition of gmxNewPositions.positions) {
-
-            // da trade in der binace api absetzen, wenn alles okay dann in db speichern
 
             const newPosition: Position = {
                 gmxPositionId: gmxNewPosition.gmxPositionId,
@@ -121,6 +118,7 @@ export class BinanceTradeService {
             gmxPositionId: closedTrade.closurePosition.gmxPositionId,
             timestamp: closedTrade.closurePosition.timestamp,
             type: PositionType.CLOSE,
+            quantity: closedTrade.closurePosition.quantity,
             quantityInUsd: closedTrade.closurePosition.quantityInUsd
         }
 
@@ -247,17 +245,6 @@ export class BinanceTradeService {
 
         const symbolInfo = await this.getSymbolInfo(binanceClient, binanceTradeParams.binanceTokenName);
 
-        let quantityOfAllPositions = 0;
-        for (const position of trade.positions) {
-            if (position?.quantity && position.type === PositionType.INCREASE) {
-                quantityOfAllPositions += position.quantity;
-            } else if (position?.quantity && position.type === PositionType.DECREASE) {
-                quantityOfAllPositions -= position.quantity;
-            }
-        }
-
-        binanceTradeParams.quantity = quantityOfAllPositions;
-
         // TODO: evtl funktionierts in prod
         // quantity: binanceTradeParams.quantity.toFixed(symbolInfo.baseAssetPrecision),
         const orderParams = {
@@ -318,7 +305,7 @@ export class BinanceTradeService {
 
         // Calculate the quantity based on USD amount and current price
         // Multiply with leverage!!
-        const quantity = (quantityInUsd / price) * leverage;
+        let quantity = positionToBeCreated.quantity ? positionToBeCreated.quantity : (quantityInUsd / price) * leverage;
 
         const binanceTradeParams = {
             binanceTokenName: binanceTokenName,
